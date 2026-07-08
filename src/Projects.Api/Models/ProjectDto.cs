@@ -1,6 +1,6 @@
 namespace Projects.Api.Models;
 
-public class Project
+public class ProjectDto
 {
     public Guid Id { get; set; }
 

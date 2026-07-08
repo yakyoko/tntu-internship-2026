@@ -1,8 +1,15 @@
 using Projects.Api.Infrastructure;
+using Projects.Api.Interfaces;
+using Projects.Api.Repositories;
+using Projects.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCosmosInfrastructure(builder.Configuration);
+
+builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
