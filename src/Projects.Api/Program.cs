@@ -5,7 +5,10 @@ using Projects.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCosmosInfrastructure(builder.Configuration);
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddCosmosInfrastructure(builder.Configuration);
+}
 
 builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
@@ -35,3 +38,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
