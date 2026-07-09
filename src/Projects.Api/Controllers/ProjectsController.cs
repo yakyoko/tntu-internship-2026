@@ -23,4 +23,11 @@ public class ProjectsController(IProjectService service) : ControllerBase
         var project = await service.GetProjectByIdAsync(id);
         return project is null ? NotFound() : Ok(project);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllProjects()
+    {
+        var projects = await service.GetAllProjectsAsync();
+        return Ok(projects);
+    }
 }

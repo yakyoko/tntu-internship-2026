@@ -26,4 +26,10 @@ public class ProjectService(IProjectRepository repository, IMapper mapper) : IPr
         var project = await repository.GetProjectByIdAsync(id);
         return mapper.Map<ProjectDto?>(project);
     }
+
+    public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
+    {
+        var projects = await repository.GetAllProjectsAsync();
+        return mapper.Map<IEnumerable<ProjectDto>>(projects);
+    }
 }

@@ -26,4 +26,12 @@ public class ProjectRepository : IProjectRepository
     {
         return await this._projectsDbSet.FindAsync(id);
     }
+
+    public async Task<IEnumerable<Project>> GetAllProjectsAsync()
+    {
+        return await this
+            ._projectsDbSet.Where(p => !p.IsArchived)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+    }
 }
