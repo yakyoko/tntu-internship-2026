@@ -24,7 +24,9 @@ public class ProjectsControllerIntegrationTests : IClassFixture<CustomWebApplica
         var items = await resp.Content.ReadFromJsonAsync<ProjectDto[]>();
         Assert.NotNull(items);
         Assert.All(items!, p => Assert.False(p.IsArchived));
-        Assert.True(items!.Length >= 1);
+        Assert.Equal(2, items!.Length);
+        Assert.Contains(items!, p => p.Id == Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        Assert.Contains(items!, p => p.Id == Guid.Parse("33333333-3333-3333-3333-333333333333"));
     }
 
     [Fact]
