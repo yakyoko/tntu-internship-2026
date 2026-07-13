@@ -2,4 +2,4 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Projects.Api.Models;
 
-public class CreateProjectDto : WriteProjectDto { }
+public class UpdateProjectDto : WriteProjectDto { }
