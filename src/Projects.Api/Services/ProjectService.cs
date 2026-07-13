@@ -1,4 +1,5 @@
 using AutoMapper;
+using Projects.Api.Exceptions;
 using Projects.Api.Interfaces;
 using Projects.Api.Models;
 
@@ -31,5 +32,26 @@ public class ProjectService(IProjectRepository repository, IMapper mapper) : IPr
     {
         var projects = await repository.GetAllProjectsAsync();
         return mapper.Map<IEnumerable<ProjectDto>>(projects);
+    }
+
+    public async Task<ProjectDto> UpdateProjectAsync(Guid id, UpdateProjectDto projectDto)
+    {
+        var project = await repository.GetProjectByIdAsync(id);
+
+        if (project is null)
+        {
+            throw new ProjectNotFoundException(id);
+        }
+
+        if (project.IsArchived)
+        {
+            throw new ProjectArchivedException(id);
+        }
+
+        project.Name = projectDto.Name;
+        project.Description = projectDto.Description;
+
+        await repository.SaveChangesAsync();
+        return mapper.Map<ProjectDto>(project);
     }
 }

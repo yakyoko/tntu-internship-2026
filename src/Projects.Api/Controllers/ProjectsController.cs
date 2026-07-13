@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Projects.Api.Exceptions;
 using Projects.Api.Interfaces;
 using Projects.Api.Models;
 
@@ -29,5 +30,23 @@ public class ProjectsController(IProjectService service) : ControllerBase
     {
         var projects = await service.GetAllProjectsAsync();
         return Ok(projects);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateProject(Guid id, UpdateProjectDto projectDto)
+    {
+        try
+        {
+            var project = await service.UpdateProjectAsync(id, projectDto);
+            return this.Ok(project);
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
+        }
+        catch (ProjectArchivedException ex)
+        {
+            return this.Conflict(ex.Message);
+        }
     }
 }

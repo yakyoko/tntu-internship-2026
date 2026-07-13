@@ -34,4 +34,9 @@ public class ProjectRepository : IProjectRepository
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task SaveChangesAsync()
+    {
+        await this._context.SaveChangesAsync();
+    }
 }
