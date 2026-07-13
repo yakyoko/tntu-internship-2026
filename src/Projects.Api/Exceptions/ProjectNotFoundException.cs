@@ -5,6 +5,6 @@ public class ProjectNotFoundException : Exception
     public ProjectNotFoundException(string message)
         : base(message) { }
 
-    public ProjectNotFoundException(int projectId)
+    public ProjectNotFoundException(Guid projectId)
         : base($"Project with ID {projectId} was not found.") { }
 }
