@@ -8,4 +8,5 @@ public interface IProjectService
     Task<ProjectDto?> GetProjectByIdAsync(Guid id);
     Task<IEnumerable<ProjectDto>> GetAllProjectsAsync();
     Task<ProjectDto> UpdateProjectAsync(Guid id, UpdateProjectDto projectDto);
+    Task<ProjectDto> ArchiveProjectAsync(Guid id);
 }
