@@ -1,5 +1,6 @@
 using AutoMapper;
 using Moq;
+using Projects.Api.Exceptions;
 using Projects.Api.Interfaces;
 using Projects.Api.Models;
 using Projects.Api.Services;
@@ -133,5 +134,151 @@ public class ProjectServiceTests
         // Assert
         Assert.Equal(2, result.Count());
         this._repoMock.Verify(r => r.GetAllProjectsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateProjectAsync_UpdatesProjectAndReturnsDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = id,
+            Name = "Old Name",
+            Description = "Old Desc",
+            CreatedAt = DateTime.UtcNow,
+            IsArchived = false,
+        };
+        var update = new UpdateProjectDto { Name = "New Name", Description = "New Desc" };
+
+        this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync(project);
+        this._repoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        this._mapperMock.Setup(m => m.Map<ProjectDto>(It.IsAny<Project>()))
+            .Returns<Project>(p => new ProjectDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                CreatedAt = p.CreatedAt,
+                IsArchived = p.IsArchived,
+            });
+
+        // Act
+        var result = await this._service.UpdateProjectAsync(id, update);
+
+        // Assert
+        Assert.Equal(update.Name, result.Name);
+        Assert.Equal(update.Description, result.Description);
+        Assert.Equal(update.Name, project.Name);
+        Assert.Equal(update.Description, project.Description);
+        this._repoMock.Verify(r => r.GetProjectByIdAsync(id), Times.Once);
+        this._repoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateProjectAsync_ThrowsProjectNotFoundException_WhenProjectMissing()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var update = new UpdateProjectDto { Name = "N", Description = "D" };
+        this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync((Project?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            this._service.UpdateProjectAsync(id, update)
+        );
+        this._repoMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateProjectAsync_ThrowsProjectArchivedException_WhenProjectAlreadyArchived()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = id,
+            Name = "Old Name",
+            CreatedAt = DateTime.UtcNow,
+            IsArchived = true,
+        };
+        var update = new UpdateProjectDto { Name = "N", Description = "D" };
+        this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync(project);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectArchivedException>(() =>
+            this._service.UpdateProjectAsync(id, update)
+        );
+        this._repoMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task ArchiveProjectAsync_ArchivesProjectAndReturnsDto()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = id,
+            Name = "Name",
+            CreatedAt = DateTime.UtcNow,
+            IsArchived = false,
+        };
+
+        this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync(project);
+        this._repoMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        this._mapperMock.Setup(m => m.Map<ProjectDto>(It.IsAny<Project>()))
+            .Returns<Project>(p => new ProjectDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                CreatedAt = p.CreatedAt,
+                IsArchived = p.IsArchived,
+            });
+
+        // Act
+        var result = await this._service.ArchiveProjectAsync(id);
+
+        // Assert
+        Assert.True(result.IsArchived);
+        Assert.True(project.IsArchived);
+        this._repoMock.Verify(r => r.GetProjectByIdAsync(id), Times.Once);
+        this._repoMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ArchiveProjectAsync_ThrowsProjectNotFoundException_WhenProjectMissing()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync((Project?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            this._service.ArchiveProjectAsync(id)
+        );
+        this._repoMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task ArchiveProjectAsync_ThrowsProjectArchivedException_WhenAlreadyArchived()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var project = new Project
+        {
+            Id = id,
+            Name = "Name",
+            CreatedAt = DateTime.UtcNow,
+            IsArchived = true,
+        };
+        this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync(project);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectArchivedException>(() =>
+            this._service.ArchiveProjectAsync(id)
+        );
+        this._repoMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
 }

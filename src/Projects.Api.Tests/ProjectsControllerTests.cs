@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Projects.Api.Controllers;
+using Projects.Api.Exceptions;
 using Projects.Api.Interfaces;
 using Projects.Api.Models;
 
@@ -118,5 +119,124 @@ public class ProjectsControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var body = Assert.IsType<ProjectDto>(ok.Value!);
         Assert.Equal(project.Id, body.Id);
+    }
+
+    [Fact]
+    public async Task ArchiveProject_ReturnsOk_WhenServiceArchivesProject()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var archived = new ProjectDto
+        {
+            Id = id,
+            Name = "Archived",
+            IsArchived = true,
+        };
+        this._mockService.Setup(s => s.ArchiveProjectAsync(id)).ReturnsAsync(archived);
+
+        // Act
+        var result = await this._controller.ArchiveProject(id);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsType<ProjectDto>(ok.Value!);
+        Assert.True(body.IsArchived);
+        Assert.Equal(id, body.Id);
+    }
+
+    [Fact]
+    public async Task ArchiveProject_ReturnsNotFound_WhenServiceThrowsNotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        this._mockService.Setup(s => s.ArchiveProjectAsync(id))
+            .ThrowsAsync(new ProjectNotFoundException(id));
+
+        // Act
+        var result = await this._controller.ArchiveProject(id);
+
+        // Assert
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ArchiveProject_ReturnsConflict_WhenServiceThrowsArchivedException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        this._mockService.Setup(s => s.ArchiveProjectAsync(id))
+            .ThrowsAsync(new ProjectArchivedException(id));
+
+        // Act
+        var result = await this._controller.ArchiveProject(id);
+
+        // Assert
+        Assert.IsType<ConflictObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateProject_ReturnsOk_WhenServiceUpdatesProject()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new UpdateProjectDto { Name = "Updated", Description = "desc" };
+        var updated = new ProjectDto
+        {
+            Id = id,
+            Name = dto.Name,
+            Description = dto.Description,
+            IsArchived = false,
+        };
+        this._mockService.Setup(s =>
+                s.UpdateProjectAsync(
+                    id,
+                    It.Is<UpdateProjectDto>(d =>
+                        d.Name == dto.Name && d.Description == dto.Description
+                    )
+                )
+            )
+            .ReturnsAsync(updated);
+
+        // Act
+        var result = await this._controller.UpdateProject(id, dto);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsType<ProjectDto>(ok.Value!);
+        Assert.Equal(dto.Name, body.Name);
+        Assert.Equal(dto.Description, body.Description);
+        Assert.Equal(id, body.Id);
+    }
+
+    [Fact]
+    public async Task UpdateProject_ReturnsNotFound_WhenServiceThrowsNotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new UpdateProjectDto { Name = "X", Description = "Y" };
+        this._mockService.Setup(s => s.UpdateProjectAsync(id, It.IsAny<UpdateProjectDto>()))
+            .ThrowsAsync(new ProjectNotFoundException(id));
+
+        // Act
+        var result = await this._controller.UpdateProject(id, dto);
+
+        // Assert
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateProject_ReturnsConflict_WhenServiceThrowsArchivedException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var dto = new UpdateProjectDto { Name = "X", Description = "Y" };
+        this._mockService.Setup(s => s.UpdateProjectAsync(id, It.IsAny<UpdateProjectDto>()))
+            .ThrowsAsync(new ProjectArchivedException(id));
+
+        // Act
+        var result = await this._controller.UpdateProject(id, dto);
+
+        // Assert
+        Assert.IsType<ConflictObjectResult>(result);
     }
 }

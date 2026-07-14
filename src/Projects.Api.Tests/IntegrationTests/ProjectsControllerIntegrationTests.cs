@@ -92,4 +92,122 @@ public class ProjectsControllerIntegrationTests : IClassFixture<CustomWebApplica
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
+
+    [Fact]
+    public async Task Archive_ReturnsOk_And_ProjectNoLongerInGetAll_ButGetByIdShowsArchived()
+    {
+        // Arrange
+        var create = await _client.PostAsJsonAsync(
+            "/api/v1/projects",
+            new CreateProjectDto { Name = "To Archive" }
+        );
+        var created = await create.Content.ReadFromJsonAsync<ProjectDto>();
+        var id = created!.Id;
+
+        // Act - archive
+        var patch = new HttpRequestMessage(
+            new HttpMethod("PATCH"),
+            $"/api/v1/projects/{id}/archive"
+        );
+        var patchResp = await _client.SendAsync(patch);
+
+        // Assert archive success
+        patchResp.EnsureSuccessStatusCode();
+        var archived = await patchResp.Content.ReadFromJsonAsync<ProjectDto>();
+        Assert.NotNull(archived);
+        Assert.True(archived!.IsArchived);
+        Assert.Equal(id, archived.Id);
+
+        // Act - get by id
+        var getResp = await _client.GetAsync($"/api/v1/projects/{id}");
+        getResp.EnsureSuccessStatusCode();
+        var got = await getResp.Content.ReadFromJsonAsync<ProjectDto>();
+        Assert.NotNull(got);
+        Assert.True(got!.IsArchived);
+    }
+
+    [Fact]
+    public async Task Archive_ReturnsNotFound_WhenMissing()
+    {
+        // Act
+        var patch = new HttpRequestMessage(
+            new HttpMethod("PATCH"),
+            $"/api/v1/projects/{Guid.NewGuid()}/archive"
+        );
+        var resp = await _client.SendAsync(patch);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Archive_ReturnsConflict_WhenAlreadyArchived()
+    {
+        // Arrange
+        var id = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+        // Act
+        var patch = new HttpRequestMessage(
+            new HttpMethod("PATCH"),
+            $"/api/v1/projects/{id}/archive"
+        );
+        var resp = await _client.SendAsync(patch);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsOk_And_ProjectIsUpdated()
+    {
+        // Arrange
+        var id = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var update = new UpdateProjectDto { Name = "Updated Name", Description = "Updated Desc" };
+
+        // Act
+        var put = await _client.PutAsJsonAsync($"/api/v1/projects/{id}", update);
+
+        // Assert
+        put.EnsureSuccessStatusCode();
+        var updated = await put.Content.ReadFromJsonAsync<ProjectDto>();
+        Assert.NotNull(updated);
+        Assert.Equal(update.Name, updated!.Name);
+        Assert.Equal(update.Description, updated.Description);
+
+        // Act - get by id
+        var get = await _client.GetAsync($"/api/v1/projects/{id}");
+        get.EnsureSuccessStatusCode();
+        var fetched = await get.Content.ReadFromJsonAsync<ProjectDto>();
+        Assert.NotNull(fetched);
+        Assert.Equal(update.Name, fetched!.Name);
+        Assert.Equal(update.Description, fetched.Description);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsNotFound_WhenMissing()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var update = new UpdateProjectDto { Name = "X", Description = "Y" };
+
+        // Act
+        var put = await _client.PutAsJsonAsync($"/api/v1/projects/{id}", update);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, put.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ReturnsConflict_WhenArchived()
+    {
+        // Arrange
+        var id = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var update = new UpdateProjectDto { Name = "X", Description = "Y" };
+
+        // Act
+        var put = await _client.PutAsJsonAsync($"/api/v1/projects/{id}", update);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, put.StatusCode);
+    }
 }

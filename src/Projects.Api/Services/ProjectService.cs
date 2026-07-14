@@ -54,4 +54,24 @@ public class ProjectService(IProjectRepository repository, IMapper mapper) : IPr
         await repository.SaveChangesAsync();
         return mapper.Map<ProjectDto>(project);
     }
+
+    public async Task<ProjectDto> ArchiveProjectAsync(Guid id)
+    {
+        var project = await repository.GetProjectByIdAsync(id);
+
+        if (project is null)
+        {
+            throw new ProjectNotFoundException(id);
+        }
+
+        if (project.IsArchived)
+        {
+            throw new ProjectArchivedException(id);
+        }
+
+        project.IsArchived = true;
+
+        await repository.SaveChangesAsync();
+        return mapper.Map<ProjectDto>(project);
+    }
 }

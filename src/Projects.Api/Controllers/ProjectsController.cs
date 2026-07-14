@@ -49,4 +49,22 @@ public class ProjectsController(IProjectService service) : ControllerBase
             return this.Conflict(ex.Message);
         }
     }
+
+    [HttpPatch("{id:guid}/archive")]
+    public async Task<IActionResult> ArchiveProject(Guid id)
+    {
+        try
+        {
+            var project = await service.ArchiveProjectAsync(id);
+            return this.Ok(project);
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
+        }
+        catch (ProjectArchivedException ex)
+        {
+            return this.Conflict(ex.Message);
+        }
+    }
 }
