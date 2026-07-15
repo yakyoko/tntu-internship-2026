@@ -21,4 +21,9 @@ public class TaskRepository : ITaskRepository
         await this._tasksDbSet.AddAsync(task);
         await this._context.SaveChangesAsync();
     }
+
+    public async Task<TaskItem?> GetTaskByIdAsync(Guid projectId, Guid taskId) =>
+        await this
+            ._tasksDbSet.WithPartitionKey(projectId.ToString())
+            .FirstOrDefaultAsync(t => t.Id == taskId);
 }

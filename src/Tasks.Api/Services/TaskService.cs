@@ -38,4 +38,16 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
 
         return mapper.Map<TaskItemDto>(task);
     }
+
+    public async Task<TaskItemDto?> GetTaskByIdAsync(Guid projectId, Guid taskId)
+    {
+        var task = await repository.GetTaskByIdAsync(projectId, taskId);
+
+        if (task is null || task.ProjectId != projectId)
+        {
+            return null;
+        }
+
+        return mapper.Map<TaskItemDto>(task);
+    }
 }

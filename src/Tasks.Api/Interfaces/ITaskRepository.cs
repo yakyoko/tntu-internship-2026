@@ -5,4 +5,5 @@ namespace Tasks.Api.Interfaces;
 public interface ITaskRepository
 {
     Task CreateTaskAsync(TaskItem task);
+    Task<TaskItem?> GetTaskByIdAsync(Guid projectId, Guid taskId);
 }
