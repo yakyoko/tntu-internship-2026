@@ -14,7 +14,7 @@ public class ProjectService(IProjectRepository repository, IMapper mapper) : IPr
             Id = Guid.NewGuid(),
             Name = projectDto.Name,
             Description = projectDto.Description,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = false,
         };
 

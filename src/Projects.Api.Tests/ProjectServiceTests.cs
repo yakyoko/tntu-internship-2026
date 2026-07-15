@@ -72,7 +72,7 @@ public class ProjectServiceTests
         {
             Id = id,
             Name = "X",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
         this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync(project);
         this._mapperMock.Setup(m => m.Map<ProjectDto?>(project))
@@ -98,7 +98,7 @@ public class ProjectServiceTests
     public async Task GetAllProjectsAsync_MapsAndReturnsAll()
     {
         // Arrange
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
         var projects = new[]
         {
             new Project
@@ -146,7 +146,7 @@ public class ProjectServiceTests
             Id = id,
             Name = "Old Name",
             Description = "Old Desc",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = false,
         };
         var update = new UpdateProjectDto { Name = "New Name", Description = "New Desc" };
@@ -199,7 +199,7 @@ public class ProjectServiceTests
         {
             Id = id,
             Name = "Old Name",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = true,
         };
         var update = new UpdateProjectDto { Name = "N", Description = "D" };
@@ -221,7 +221,7 @@ public class ProjectServiceTests
         {
             Id = id,
             Name = "Name",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = false,
         };
 
@@ -270,7 +270,7 @@ public class ProjectServiceTests
         {
             Id = id,
             Name = "Name",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = true,
         };
         this._repoMock.Setup(r => r.GetProjectByIdAsync(id)).ReturnsAsync(project);

@@ -63,7 +63,7 @@ public class ProjectsControllerTests
             Id = Guid.NewGuid(),
             Name = createDto.Name,
             Description = createDto.Description,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             IsArchived = false,
         };
 
@@ -108,7 +108,7 @@ public class ProjectsControllerTests
         {
             Id = id,
             Name = "X",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
         this._mockService.Setup(s => s.GetProjectByIdAsync(id)).ReturnsAsync(project);
 
