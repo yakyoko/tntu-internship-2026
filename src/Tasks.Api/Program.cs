@@ -1,4 +1,8 @@
+using Tasks.Api.Clients;
 using Tasks.Api.Infrastructure;
+using Tasks.Api.Interfaces;
+using Tasks.Api.Repositories;
+using Tasks.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +10,15 @@ if (!builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddCosmosInfrastructure(builder.Configuration);
 }
+
+builder.Services.AddHttpClient<IProjectApiClient, ProjectApiClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ProjectsApi:BaseUrl"]!);
+});
+
+builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 builder.Services.AddControllers();
 
