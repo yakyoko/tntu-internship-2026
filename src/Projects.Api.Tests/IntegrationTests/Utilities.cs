@@ -13,7 +13,7 @@ public static class Utilities
             db.SaveChanges();
         }
 
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         db.Projects.AddRange(
             new Project
