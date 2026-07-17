@@ -26,4 +26,10 @@ public class TaskRepository : ITaskRepository
         await this
             ._tasksDbSet.WithPartitionKey(projectId.ToString())
             .FirstOrDefaultAsync(t => t.Id == taskId);
+
+    public async Task<IEnumerable<TaskItem>> GetAllTasksByProjectIdAsync(Guid projectId) =>
+        await this
+            ._tasksDbSet.WithPartitionKey(projectId.ToString())
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
 }

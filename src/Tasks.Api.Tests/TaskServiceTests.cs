@@ -231,4 +231,111 @@ public class TaskServiceTests
         // Assert
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task GetAllTasksByProjectIdAsync_ReturnsPopulatedList_WhenTasksExist()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var project = new ProjectDto
+        {
+            Id = projectId,
+            Name = "Project A",
+            IsArchived = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+        var tasks = new[]
+        {
+            new TaskItem
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Task 1",
+                Status = "ToDo",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            },
+            new TaskItem
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Task 2",
+                Status = "InProgress",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            },
+        };
+
+        _projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId)).ReturnsAsync(project);
+        _repositoryMock.Setup(r => r.GetAllTasksByProjectIdAsync(projectId)).ReturnsAsync(tasks);
+        _mapperMock
+            .Setup(m => m.Map<IEnumerable<TaskItemDto>>(tasks))
+            .Returns(
+                tasks.Select(t => new TaskItemDto
+                {
+                    Id = t.Id,
+                    ProjectId = t.ProjectId,
+                    Title = t.Title,
+                    Status = t.Status,
+                    CreatedAt = t.CreatedAt,
+                    UpdatedAt = t.UpdatedAt,
+                })
+            );
+
+        // Act
+        var result = await _service.GetAllTasksByProjectIdAsync(projectId);
+
+        // Assert
+        var resultList = result.ToList();
+        Assert.Equal(2, resultList.Count);
+        Assert.All(resultList, dto => Assert.Equal(projectId, dto.ProjectId));
+        _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(projectId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllTasksByProjectIdAsync_ReturnsEmptyList_WhenNoTasksExist()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var project = new ProjectDto
+        {
+            Id = projectId,
+            Name = "Project A",
+            IsArchived = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId)).ReturnsAsync(project);
+        _repositoryMock
+            .Setup(r => r.GetAllTasksByProjectIdAsync(projectId))
+            .ReturnsAsync(Enumerable.Empty<TaskItem>());
+        _mapperMock
+            .Setup(m => m.Map<IEnumerable<TaskItemDto>>(It.IsAny<IEnumerable<TaskItem>>()))
+            .Returns(Enumerable.Empty<TaskItemDto>());
+
+        // Act
+        var result = await _service.GetAllTasksByProjectIdAsync(projectId);
+
+        // Assert
+        Assert.Empty(result);
+        _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(projectId), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllTasksByProjectIdAsync_ThrowsProjectNotFoundException_WhenProjectMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        _projectApiClientMock
+            .Setup(c => c.GetProjectByIdAsync(projectId))
+            .ReturnsAsync((ProjectDto?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            _service.GetAllTasksByProjectIdAsync(projectId)
+        );
+
+        _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(It.IsAny<Guid>()), Times.Never);
+    }
 }

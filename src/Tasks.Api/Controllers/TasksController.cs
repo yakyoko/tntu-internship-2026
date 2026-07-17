@@ -37,4 +37,18 @@ public class TasksController(ITaskService service) : ControllerBase
         var task = await service.GetTaskByIdAsync(projectId, taskId);
         return task is null ? this.NotFound() : this.Ok(task);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllTasksByProjectId(Guid projectId)
+    {
+        try
+        {
+            var tasks = await service.GetAllTasksByProjectIdAsync(projectId);
+            return this.Ok(tasks);
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
+        }
+    }
 }

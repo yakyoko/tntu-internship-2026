@@ -50,4 +50,16 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
 
         return mapper.Map<TaskItemDto>(task);
     }
+
+    public async Task<IEnumerable<TaskItemDto>> GetAllTasksByProjectIdAsync(Guid projectId)
+    {
+        var project = await apiClient.GetProjectByIdAsync(projectId);
+        if (project is null)
+        {
+            throw new ProjectNotFoundException(projectId);
+        }
+
+        var tasks = await repository.GetAllTasksByProjectIdAsync(projectId);
+        return mapper.Map<IEnumerable<TaskItemDto>>(tasks);
+    }
 }

@@ -133,4 +133,79 @@ public class TasksControllerTests
         // Assert
         Assert.IsType<NotFoundResult>(result);
     }
+
+    [Fact]
+    public async Task GetAllTasksByProjectId_ReturnsOk_WithPopulatedList()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var tasks = new[]
+        {
+            new TaskItemDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Task 1",
+                Status = "ToDo",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            },
+            new TaskItemDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Task 2",
+                Status = "InProgress",
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            },
+        };
+
+        _serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId)).ReturnsAsync(tasks);
+
+        // Act
+        var result = await _controller.GetAllTasksByProjectId(projectId);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsAssignableFrom<IEnumerable<TaskItemDto>>(ok.Value);
+        Assert.Equal(2, body.Count());
+    }
+
+    [Fact]
+    public async Task GetAllTasksByProjectId_ReturnsOk_WithEmptyList()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        _serviceMock
+            .Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+            .ReturnsAsync(Enumerable.Empty<TaskItemDto>());
+
+        // Act
+        var result = await _controller.GetAllTasksByProjectId(projectId);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsAssignableFrom<IEnumerable<TaskItemDto>>(ok.Value);
+        Assert.Empty(body);
+    }
+
+    [Fact]
+    public async Task GetAllTasksByProjectId_ReturnsNotFound_WhenProjectMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        _serviceMock
+            .Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+            .ThrowsAsync(new ProjectNotFoundException(projectId));
+
+        // Act
+        var result = await _controller.GetAllTasksByProjectId(projectId);
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Contains(projectId.ToString(), notFound.Value!.ToString());
+    }
 }
