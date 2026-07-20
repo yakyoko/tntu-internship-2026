@@ -208,4 +208,54 @@ public class TasksControllerTests
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Contains(projectId.ToString(), notFound.Value!.ToString());
     }
+
+    [Fact]
+    public async Task UpdateTask_ReturnsOk_WhenTaskUpdated()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var update = new UpdateTaskDto { Title = "Updated Title", Description = "Updated Desc" };
+        var updated = new TaskItemDto
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = update.Title,
+            Description = update.Description,
+            Status = "ToDo",
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _serviceMock.Setup(s => s.UpdateTaskAsync(projectId, taskId, update)).ReturnsAsync(updated);
+
+        // Act
+        var result = await _controller.UpdateTask(projectId, taskId, update);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsType<TaskItemDto>(ok.Value);
+        Assert.Equal(taskId, body.Id);
+        Assert.Equal(update.Title, body.Title);
+        Assert.Equal(update.Description, body.Description);
+    }
+
+    [Fact]
+    public async Task UpdateTask_ReturnsNotFound_WhenTaskMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var update = new UpdateTaskDto { Title = "Title" };
+
+        _serviceMock
+            .Setup(s => s.UpdateTaskAsync(projectId, taskId, update))
+            .ReturnsAsync((TaskItemDto?)null);
+
+        // Act
+        var result = await _controller.UpdateTask(projectId, taskId, update);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
 }
