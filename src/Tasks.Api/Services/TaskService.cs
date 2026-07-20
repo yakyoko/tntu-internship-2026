@@ -62,4 +62,27 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         var tasks = await repository.GetAllTasksByProjectIdAsync(projectId);
         return mapper.Map<IEnumerable<TaskItemDto>>(tasks);
     }
+
+    public async Task<TaskItemDto?> UpdateTaskAsync(
+        Guid projectId,
+        Guid taskId,
+        UpdateTaskDto updateTaskDto
+    )
+    {
+        var task = await repository.GetTaskByIdAsync(projectId, taskId);
+        if (task is null)
+        {
+            return null;
+        }
+
+        task.Title = updateTaskDto.Title;
+        task.Description = updateTaskDto.Description;
+        task.Assignee = updateTaskDto.Assignee;
+        task.DueDate = updateTaskDto.DueDate;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await repository.SaveChangesAsync();
+
+        return mapper.Map<TaskItemDto>(task);
+    }
 }

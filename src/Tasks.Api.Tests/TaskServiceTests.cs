@@ -338,4 +338,142 @@ public class TaskServiceTests
 
         _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(It.IsAny<Guid>()), Times.Never);
     }
+
+    [Fact]
+    public async Task UpdateTaskAsync_UpdatesTaskAndReturnsDto_WhenTaskExists()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var originalCreatedAt = DateTimeOffset.UtcNow.AddDays(-1);
+        var task = new TaskItem
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Old Title",
+            Description = "Old Description",
+            Status = "InProgress",
+            Assignee = "Old Assignee",
+            DueDate = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedAt = originalCreatedAt,
+            UpdatedAt = originalCreatedAt,
+        };
+        var update = new UpdateTaskDto
+        {
+            Title = "New Title",
+            Description = "New Description",
+            Assignee = "New Assignee",
+            DueDate = DateTimeOffset.UtcNow.AddDays(5),
+        };
+
+        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _mapperMock
+            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+            .Returns<TaskItem>(t => new TaskItemDto
+            {
+                Id = t.Id,
+                ProjectId = t.ProjectId,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Assignee = t.Assignee,
+                DueDate = t.DueDate,
+                CreatedAt = t.CreatedAt,
+                UpdatedAt = t.UpdatedAt,
+            });
+
+        // Act
+        var result = await _service.UpdateTaskAsync(projectId, taskId, update);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(update.Title, result!.Title);
+        Assert.Equal(update.Description, result.Description);
+        Assert.Equal(update.Assignee, result.Assignee);
+        Assert.Equal(update.DueDate, result.DueDate);
+
+        Assert.Equal(update.Title, task.Title);
+        Assert.Equal(update.Description, task.Description);
+        Assert.Equal(update.Assignee, task.Assignee);
+        Assert.Equal(update.DueDate, task.DueDate);
+
+        Assert.Equal("InProgress", task.Status);
+        Assert.Equal(taskId, task.Id);
+        Assert.Equal(projectId, task.ProjectId);
+        Assert.Equal(originalCreatedAt, task.CreatedAt);
+
+        Assert.True(task.UpdatedAt > originalCreatedAt);
+
+        _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
+        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateTaskAsync_ClearsOptionalFields_WhenNotProvided()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var task = new TaskItem
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Old Title",
+            Description = "Old Description",
+            Status = "ToDo",
+            Assignee = "Old Assignee",
+            DueDate = DateTimeOffset.UtcNow.AddDays(1),
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+            UpdatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+        };
+        var update = new UpdateTaskDto { Title = "New Title" };
+
+        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _mapperMock
+            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+            .Returns<TaskItem>(t => new TaskItemDto
+            {
+                Id = t.Id,
+                ProjectId = t.ProjectId,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Assignee = t.Assignee,
+                DueDate = t.DueDate,
+                CreatedAt = t.CreatedAt,
+                UpdatedAt = t.UpdatedAt,
+            });
+
+        // Act
+        var result = await _service.UpdateTaskAsync(projectId, taskId, update);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("New Title", result!.Title);
+        Assert.Null(result.Description);
+        Assert.Null(result.Assignee);
+        Assert.Null(result.DueDate);
+    }
+
+    [Fact]
+    public async Task UpdateTaskAsync_ReturnsNull_WhenTaskMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var update = new UpdateTaskDto { Title = "Title" };
+
+        _repositoryMock
+            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+            .ReturnsAsync((TaskItem?)null);
+
+        // Act
+        var result = await _service.UpdateTaskAsync(projectId, taskId, update);
+
+        // Assert
+        Assert.Null(result);
+        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
 }
