@@ -51,4 +51,15 @@ public class TasksController(ITaskService service) : ControllerBase
             return this.NotFound(ex.Message);
         }
     }
+
+    [HttpPut("{taskId:guid}")]
+    public async Task<IActionResult> UpdateTask(
+        Guid projectId,
+        Guid taskId,
+        UpdateTaskDto updateTaskDto
+    )
+    {
+        var task = await service.UpdateTaskAsync(projectId, taskId, updateTaskDto);
+        return task is null ? this.NotFound() : this.Ok(task);
+    }
 }
