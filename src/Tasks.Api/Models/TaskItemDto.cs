@@ -10,7 +10,7 @@ public class TaskItemDto
 
     public string? Description { get; set; }
 
-    public required string Status { get; set; }
+    public TaskItemStatus Status { get; set; }
 
     public string? Assignee { get; set; }
 

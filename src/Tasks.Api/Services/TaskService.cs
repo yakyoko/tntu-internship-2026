@@ -27,7 +27,7 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
             ProjectId = projectId,
             Title = createTaskDto.Title,
             Description = createTaskDto.Description,
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             Assignee = createTaskDto.Assignee,
             DueDate = createTaskDto.DueDate,
             CreatedAt = DateTimeOffset.UtcNow,
