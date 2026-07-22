@@ -37,4 +37,10 @@ public class TaskRepository : ITaskRepository
     {
         await this._context.SaveChangesAsync();
     }
+
+    public async Task RemoveTaskAsync(TaskItem task)
+    {
+        this._tasksDbSet.Remove(task);
+        await this._context.SaveChangesAsync();
+    }
 }

@@ -8,4 +8,5 @@ public interface ITaskRepository
     Task<TaskItem?> GetTaskByIdAsync(Guid projectId, Guid taskId);
     Task<IEnumerable<TaskItem>> GetAllTasksByProjectIdAsync(Guid projectId);
     Task SaveChangesAsync();
+    Task RemoveTaskAsync(TaskItem task);
 }
