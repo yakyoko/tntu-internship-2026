@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Tasks.Api.Clients;
 using Tasks.Api.Infrastructure;
 using Tasks.Api.Interfaces;
@@ -21,6 +22,12 @@ builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 
 builder.Services.AddControllers();
+builder
+    .Services.AddControllers()
+    .AddJsonOptions(opt =>
+    {
+        opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

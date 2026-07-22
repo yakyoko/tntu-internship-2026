@@ -10,6 +10,7 @@ public class TasksDbContext(DbContextOptions<TasksDbContext> options) : DbContex
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TaskItem>().ToContainer("tasks").HasPartitionKey(t => t.ProjectId);
+        modelBuilder.Entity<TaskItem>().Property(t => t.Status).HasConversion<string>();
         base.OnModelCreating(modelBuilder);
     }
 }
