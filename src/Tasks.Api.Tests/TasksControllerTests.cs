@@ -125,13 +125,13 @@ public class TasksControllerTests
 
         _serviceMock
             .Setup(s => s.GetTaskByIdAsync(projectId, taskId))
-            .ReturnsAsync((TaskItemDto?)null);
+            .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
         var result = await _controller.GetTaskById(projectId, taskId);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]
@@ -250,13 +250,13 @@ public class TasksControllerTests
 
         _serviceMock
             .Setup(s => s.UpdateTaskAsync(projectId, taskId, update))
-            .ReturnsAsync((TaskItemDto?)null);
+            .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
         var result = await _controller.UpdateTask(projectId, taskId, update);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]
@@ -299,13 +299,13 @@ public class TasksControllerTests
 
         _serviceMock
             .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
-            .ReturnsAsync((TaskItemDto?)null);
+            .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
         var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]
@@ -327,5 +327,40 @@ public class TasksControllerTests
 
         // Assert
         Assert.IsType<ConflictObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task DeleteTask_ReturnsNoContent_WhenTaskDeleted()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+
+        _serviceMock.Setup(s => s.DeleteTaskAsync(projectId, taskId)).Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _controller.DeleteTask(projectId, taskId);
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+        _serviceMock.Verify(s => s.DeleteTaskAsync(projectId, taskId), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteTask_ReturnsNotFound_WhenTaskMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+
+        _serviceMock
+            .Setup(s => s.DeleteTaskAsync(projectId, taskId))
+            .ThrowsAsync(new TaskNotFoundException(taskId));
+
+        // Act
+        var result = await _controller.DeleteTask(projectId, taskId);
+
+        // Assert
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 }

@@ -176,8 +176,7 @@ public class TaskServiceTests
         var result = await _service.GetTaskByIdAsync(projectId, taskId);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(taskId, result!.Id);
+        Assert.Equal(taskId, result.Id);
         Assert.Equal(projectId, result.ProjectId);
         Assert.Equal("Task", result.Title);
 
@@ -185,7 +184,7 @@ public class TaskServiceTests
     }
 
     [Fact]
-    public async Task GetTaskByIdAsync_ReturnsNull_WhenRepositoryReturnsNull()
+    public async Task GetTaskByIdAsync_ThrowsTaskNotFoundException_WhenRepositoryReturnsNull()
     {
         // Arrange
         var projectId = Guid.NewGuid();
@@ -195,41 +194,12 @@ public class TaskServiceTests
             .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
-        // Act
-        var result = await _service.GetTaskByIdAsync(projectId, taskId);
+        // Act & Assert
+        await Assert.ThrowsAsync<TaskNotFoundException>(() =>
+            _service.GetTaskByIdAsync(projectId, taskId)
+        );
 
-        // Assert
-        Assert.Null(result);
         _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetTaskByIdAsync_ReturnsNull_WhenTaskBelongsToAnotherProject()
-    {
-        // Arrange
-        var projectId = Guid.NewGuid();
-        var otherProjectId = Guid.NewGuid();
-        var taskId = Guid.NewGuid();
-
-        _repositoryMock
-            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
-            .ReturnsAsync(
-                new TaskItem
-                {
-                    Id = taskId,
-                    ProjectId = otherProjectId,
-                    Title = "Task",
-                    Status = TaskItemStatus.ToDo,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow,
-                }
-            );
-
-        // Act
-        var result = await _service.GetTaskByIdAsync(projectId, taskId);
-
-        // Assert
-        Assert.Null(result);
     }
 
     [Fact]
@@ -387,8 +357,7 @@ public class TaskServiceTests
         var result = await _service.UpdateTaskAsync(projectId, taskId, update);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(update.Title, result!.Title);
+        Assert.Equal(update.Title, result.Title);
         Assert.Equal(update.Description, result.Description);
         Assert.Equal(update.Assignee, result.Assignee);
         Assert.Equal(update.DueDate, result.DueDate);
@@ -450,15 +419,14 @@ public class TaskServiceTests
         var result = await _service.UpdateTaskAsync(projectId, taskId, update);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal("New Title", result!.Title);
+        Assert.Equal("New Title", result.Title);
         Assert.Null(result.Description);
         Assert.Null(result.Assignee);
         Assert.Null(result.DueDate);
     }
 
     [Fact]
-    public async Task UpdateTaskAsync_ReturnsNull_WhenTaskMissing()
+    public async Task UpdateTaskAsync_ThrowsTaskNotFoundException_WhenTaskMissing()
     {
         // Arrange
         var projectId = Guid.NewGuid();
@@ -469,11 +437,11 @@ public class TaskServiceTests
             .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
-        // Act
-        var result = await _service.UpdateTaskAsync(projectId, taskId, update);
+        // Act & Assert
+        await Assert.ThrowsAsync<TaskNotFoundException>(() =>
+            _service.UpdateTaskAsync(projectId, taskId, update)
+        );
 
-        // Assert
-        Assert.Null(result);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
 
@@ -518,8 +486,7 @@ public class TaskServiceTests
         var result = await _service.ChangeTaskStatusAsync(projectId, taskId, request);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.Equal(to, result!.Status);
+        Assert.Equal(to, result.Status);
         Assert.Equal(to, task.Status);
         Assert.True(task.UpdatedAt > originalUpdatedAt);
 
@@ -564,7 +531,7 @@ public class TaskServiceTests
     }
 
     [Fact]
-    public async Task ChangeTaskStatusAsync_ReturnsNull_WhenTaskMissing()
+    public async Task ChangeTaskStatusAsync_ThrowsTaskNotFoundException_WhenTaskMissing()
     {
         // Arrange
         var projectId = Guid.NewGuid();
@@ -575,11 +542,57 @@ public class TaskServiceTests
             .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
+        // Act & Assert
+        await Assert.ThrowsAsync<TaskNotFoundException>(() =>
+            _service.ChangeTaskStatusAsync(projectId, taskId, request)
+        );
+
+        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteTaskAsync_RemovesTask_WhenTaskExists()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var task = new TaskItem
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Task",
+            Status = TaskItemStatus.ToDo,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        _repositoryMock.Setup(r => r.RemoveTaskAsync(task)).Returns(Task.CompletedTask);
+
         // Act
-        var result = await _service.ChangeTaskStatusAsync(projectId, taskId, request);
+        await _service.DeleteTaskAsync(projectId, taskId);
 
         // Assert
-        Assert.Null(result);
-        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+        _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
+        _repositoryMock.Verify(r => r.RemoveTaskAsync(task), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteTaskAsync_ThrowsTaskNotFoundException_WhenTaskMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+
+        _repositoryMock
+            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+            .ReturnsAsync((TaskItem?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<TaskNotFoundException>(() =>
+            _service.DeleteTaskAsync(projectId, taskId)
+        );
+
+        _repositoryMock.Verify(r => r.RemoveTaskAsync(It.IsAny<TaskItem>()), Times.Never);
     }
 }
