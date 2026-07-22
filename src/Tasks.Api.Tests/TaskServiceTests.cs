@@ -476,4 +476,110 @@ public class TaskServiceTests
         Assert.Null(result);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
+
+    [Theory]
+    [InlineData(TaskItemStatus.ToDo, TaskItemStatus.InProgress)]
+    [InlineData(TaskItemStatus.InProgress, TaskItemStatus.Done)]
+    public async Task ChangeTaskStatusAsync_UpdatesStatusAndReturnsDto_WhenTransitionAllowed(
+        TaskItemStatus from,
+        TaskItemStatus to
+    )
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var originalUpdatedAt = DateTimeOffset.UtcNow.AddDays(-1);
+        var task = new TaskItem
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Task",
+            Status = from,
+            CreatedAt = originalUpdatedAt,
+            UpdatedAt = originalUpdatedAt,
+        };
+        var request = new ChangeTaskStatusDto { Status = to };
+
+        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        _mapperMock
+            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+            .Returns<TaskItem>(t => new TaskItemDto
+            {
+                Id = t.Id,
+                ProjectId = t.ProjectId,
+                Title = t.Title,
+                Status = t.Status,
+                CreatedAt = t.CreatedAt,
+                UpdatedAt = t.UpdatedAt,
+            });
+
+        // Act
+        var result = await _service.ChangeTaskStatusAsync(projectId, taskId, request);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(to, result!.Status);
+        Assert.Equal(to, task.Status);
+        Assert.True(task.UpdatedAt > originalUpdatedAt);
+
+        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(TaskItemStatus.ToDo, TaskItemStatus.Done)]
+    [InlineData(TaskItemStatus.ToDo, TaskItemStatus.ToDo)]
+    [InlineData(TaskItemStatus.InProgress, TaskItemStatus.ToDo)]
+    [InlineData(TaskItemStatus.InProgress, TaskItemStatus.InProgress)]
+    [InlineData(TaskItemStatus.Done, TaskItemStatus.ToDo)]
+    [InlineData(TaskItemStatus.Done, TaskItemStatus.InProgress)]
+    [InlineData(TaskItemStatus.Done, TaskItemStatus.Done)]
+    public async Task ChangeTaskStatusAsync_ThrowsInvalidTaskStatusTransitionException_WhenTransitionDisallowed(
+        TaskItemStatus from,
+        TaskItemStatus to
+    )
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var task = new TaskItem
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Task",
+            Status = from,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+        var request = new ChangeTaskStatusDto { Status = to };
+
+        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidTaskStatusTransitionException>(() =>
+            _service.ChangeTaskStatusAsync(projectId, taskId, request)
+        );
+
+        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task ChangeTaskStatusAsync_ReturnsNull_WhenTaskMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var request = new ChangeTaskStatusDto { Status = TaskItemStatus.InProgress };
+
+        _repositoryMock
+            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+            .ReturnsAsync((TaskItem?)null);
+
+        // Act
+        var result = await _service.ChangeTaskStatusAsync(projectId, taskId, request);
+
+        // Assert
+        Assert.Null(result);
+        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+    }
 }

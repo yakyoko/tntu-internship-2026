@@ -73,7 +73,7 @@ public class TasksController(ITaskService service) : ControllerBase
         try
         {
             var task = await service.ChangeTaskStatusAsync(projectId, taskId, status);
-            return this.Ok(task);
+            return task is null ? this.NotFound() : this.Ok(task);
         }
         catch (InvalidTaskStatusTransitionException ex)
         {
