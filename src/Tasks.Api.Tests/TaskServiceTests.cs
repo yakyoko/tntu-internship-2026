@@ -77,7 +77,7 @@ public class TaskServiceTests
         Assert.Equal(createDto.Description, createdTask.Description);
         Assert.Equal(createDto.Assignee, createdTask.Assignee);
         Assert.Equal(createDto.DueDate, createdTask.DueDate);
-        Assert.Equal("ToDo", createdTask.Status);
+        Assert.Equal(TaskItemStatus.ToDo, createdTask.Status);
         Assert.NotEqual(Guid.Empty, createdTask.Id);
         Assert.NotEqual(default, createdTask.CreatedAt);
         Assert.NotEqual(default, createdTask.UpdatedAt);
@@ -86,7 +86,7 @@ public class TaskServiceTests
         Assert.Equal(createdTask.Id, result.Id);
         Assert.Equal(projectId, result.ProjectId);
         Assert.Equal(createDto.Title, result.Title);
-        Assert.Equal("ToDo", result.Status);
+        Assert.Equal(TaskItemStatus.ToDo, result.Status);
 
         _projectApiClientMock.Verify(c => c.GetProjectByIdAsync(projectId), Times.Once);
         _repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Once);
@@ -147,7 +147,7 @@ public class TaskServiceTests
             ProjectId = projectId,
             Title = "Task",
             Description = "Desc",
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             Assignee = "Alex",
             DueDate = DateTimeOffset.UtcNow.AddDays(1),
             CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-5),
@@ -219,7 +219,7 @@ public class TaskServiceTests
                     Id = taskId,
                     ProjectId = otherProjectId,
                     Title = "Task",
-                    Status = "ToDo",
+                    Status = TaskItemStatus.ToDo,
                     CreatedAt = DateTimeOffset.UtcNow,
                     UpdatedAt = DateTimeOffset.UtcNow,
                 }
@@ -251,7 +251,7 @@ public class TaskServiceTests
                 Id = Guid.NewGuid(),
                 ProjectId = projectId,
                 Title = "Task 1",
-                Status = "ToDo",
+                Status = TaskItemStatus.ToDo,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
             },
@@ -260,7 +260,7 @@ public class TaskServiceTests
                 Id = Guid.NewGuid(),
                 ProjectId = projectId,
                 Title = "Task 2",
-                Status = "InProgress",
+                Status = TaskItemStatus.InProgress,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
             },
@@ -352,7 +352,7 @@ public class TaskServiceTests
             ProjectId = projectId,
             Title = "Old Title",
             Description = "Old Description",
-            Status = "InProgress",
+            Status = TaskItemStatus.InProgress,
             Assignee = "Old Assignee",
             DueDate = DateTimeOffset.UtcNow.AddDays(1),
             CreatedAt = originalCreatedAt,
@@ -398,7 +398,7 @@ public class TaskServiceTests
         Assert.Equal(update.Assignee, task.Assignee);
         Assert.Equal(update.DueDate, task.DueDate);
 
-        Assert.Equal("InProgress", task.Status);
+        Assert.Equal(TaskItemStatus.InProgress, task.Status);
         Assert.Equal(taskId, task.Id);
         Assert.Equal(projectId, task.ProjectId);
         Assert.Equal(originalCreatedAt, task.CreatedAt);
@@ -421,7 +421,7 @@ public class TaskServiceTests
             ProjectId = projectId,
             Title = "Old Title",
             Description = "Old Description",
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             Assignee = "Old Assignee",
             DueDate = DateTimeOffset.UtcNow.AddDays(1),
             CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
