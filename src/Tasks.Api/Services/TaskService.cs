@@ -40,15 +40,13 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         return mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItemDto?> GetTaskByIdAsync(Guid projectId, Guid taskId)
+    public async Task<TaskItemDto> GetTaskByIdAsync(Guid projectId, Guid taskId)
     {
         var task = await repository.GetTaskByIdAsync(projectId, taskId);
-
-        if (task is null || task.ProjectId != projectId)
+        if (task is null)
         {
-            return null;
+            throw new TaskNotFoundException(taskId);
         }
-
         return mapper.Map<TaskItemDto>(task);
     }
 
@@ -64,7 +62,7 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         return mapper.Map<IEnumerable<TaskItemDto>>(tasks);
     }
 
-    public async Task<TaskItemDto?> UpdateTaskAsync(
+    public async Task<TaskItemDto> UpdateTaskAsync(
         Guid projectId,
         Guid taskId,
         UpdateTaskDto updateTaskDto
@@ -73,7 +71,7 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         var task = await repository.GetTaskByIdAsync(projectId, taskId);
         if (task is null)
         {
-            return null;
+            throw new TaskNotFoundException(taskId);
         }
 
         task.Title = updateTaskDto.Title;
@@ -87,7 +85,7 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         return mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<TaskItemDto?> ChangeTaskStatusAsync(
+    public async Task<TaskItemDto> ChangeTaskStatusAsync(
         Guid projectId,
         Guid taskId,
         ChangeTaskStatusDto changeTaskStatusDto
@@ -96,7 +94,7 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         var task = await repository.GetTaskByIdAsync(projectId, taskId);
         if (task is null)
         {
-            return null;
+            throw new TaskNotFoundException(taskId);
         }
 
         var currentStatus = task.Status;
@@ -111,5 +109,15 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
         task.UpdatedAt = DateTimeOffset.UtcNow;
         await repository.SaveChangesAsync();
         return mapper.Map<TaskItemDto>(task);
+    }
+
+    public async Task DeleteTaskAsync(Guid projectId, Guid taskId)
+    {
+        var task = await repository.GetTaskByIdAsync(projectId, taskId);
+        if (task is null)
+        {
+            throw new TaskNotFoundException(taskId);
+        }
+        await repository.RemoveTaskAsync(task);
     }
 }

@@ -34,8 +34,15 @@ public class TasksController(ITaskService service) : ControllerBase
     [HttpGet("{taskId:guid}")]
     public async Task<IActionResult> GetTaskById(Guid projectId, Guid taskId)
     {
-        var task = await service.GetTaskByIdAsync(projectId, taskId);
-        return task is null ? this.NotFound() : this.Ok(task);
+        try
+        {
+            var task = await service.GetTaskByIdAsync(projectId, taskId);
+            return this.Ok(task);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
+        }
     }
 
     [HttpGet]
@@ -59,8 +66,15 @@ public class TasksController(ITaskService service) : ControllerBase
         UpdateTaskDto updateTaskDto
     )
     {
-        var task = await service.UpdateTaskAsync(projectId, taskId, updateTaskDto);
-        return task is null ? this.NotFound() : this.Ok(task);
+        try
+        {
+            var task = await service.UpdateTaskAsync(projectId, taskId, updateTaskDto);
+            return this.Ok(task);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
+        }
     }
 
     [HttpPatch("{taskId:guid}/status")]
@@ -73,11 +87,31 @@ public class TasksController(ITaskService service) : ControllerBase
         try
         {
             var task = await service.ChangeTaskStatusAsync(projectId, taskId, status);
-            return task is null ? this.NotFound() : this.Ok(task);
+            return this.Ok(task);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
         }
         catch (InvalidTaskStatusTransitionException ex)
         {
             return this.Conflict(ex.Message);
+        }
+    }
+
+    [HttpDelete("{taskId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteTask(Guid projectId, Guid taskId)
+    {
+        try
+        {
+            await service.DeleteTaskAsync(projectId, taskId);
+            return this.NoContent();
+        }
+        catch (TaskNotFoundException ex)
+        {
+            return this.NotFound(ex.Message);
         }
     }
 }
