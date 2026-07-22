@@ -1,4 +1,5 @@
 using AutoMapper;
+using Tasks.Api.Domain;
 using Tasks.Api.Exceptions;
 using Tasks.Api.Interfaces;
 using Tasks.Api.Models;
@@ -27,7 +28,7 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
             ProjectId = projectId,
             Title = createTaskDto.Title,
             Description = createTaskDto.Description,
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             Assignee = createTaskDto.Assignee,
             DueDate = createTaskDto.DueDate,
             CreatedAt = DateTimeOffset.UtcNow,
@@ -83,6 +84,32 @@ public class TaskService(ITaskRepository repository, IProjectApiClient apiClient
 
         await repository.SaveChangesAsync();
 
+        return mapper.Map<TaskItemDto>(task);
+    }
+
+    public async Task<TaskItemDto?> ChangeTaskStatusAsync(
+        Guid projectId,
+        Guid taskId,
+        ChangeTaskStatusDto changeTaskStatusDto
+    )
+    {
+        var task = await repository.GetTaskByIdAsync(projectId, taskId);
+        if (task is null)
+        {
+            return null;
+        }
+
+        var currentStatus = task.Status;
+        var newStatus = changeTaskStatusDto.Status;
+
+        if (!TaskStatusTransition.IsAllowed(currentStatus, newStatus))
+        {
+            throw new InvalidTaskStatusTransitionException(currentStatus, newStatus);
+        }
+
+        task.Status = newStatus;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+        await repository.SaveChangesAsync();
         return mapper.Map<TaskItemDto>(task);
     }
 }

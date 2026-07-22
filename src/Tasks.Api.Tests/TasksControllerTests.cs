@@ -29,7 +29,7 @@ public class TasksControllerTests
             ProjectId = projectId,
             Title = createDto.Title,
             Description = createDto.Description,
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
@@ -99,7 +99,7 @@ public class TasksControllerTests
             Id = taskId,
             ProjectId = projectId,
             Title = "Task",
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
@@ -146,7 +146,7 @@ public class TasksControllerTests
                 Id = Guid.NewGuid(),
                 ProjectId = projectId,
                 Title = "Task 1",
-                Status = "ToDo",
+                Status = TaskItemStatus.ToDo,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
             },
@@ -155,7 +155,7 @@ public class TasksControllerTests
                 Id = Guid.NewGuid(),
                 ProjectId = projectId,
                 Title = "Task 2",
-                Status = "InProgress",
+                Status = TaskItemStatus.InProgress,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
             },
@@ -222,7 +222,7 @@ public class TasksControllerTests
             ProjectId = projectId,
             Title = update.Title,
             Description = update.Description,
-            Status = "ToDo",
+            Status = TaskItemStatus.ToDo,
             CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
             UpdatedAt = DateTimeOffset.UtcNow,
         };
@@ -257,5 +257,75 @@ public class TasksControllerTests
 
         // Assert
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task ChangeTaskStatus_ReturnsOk_WhenTransitionSucceeds()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var request = new ChangeTaskStatusDto { Status = TaskItemStatus.InProgress };
+        var updated = new TaskItemDto
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Task",
+            Status = TaskItemStatus.InProgress,
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+
+        _serviceMock
+            .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
+            .ReturnsAsync(updated);
+
+        // Act
+        var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsType<TaskItemDto>(ok.Value);
+        Assert.Equal(TaskItemStatus.InProgress, body.Status);
+    }
+
+    [Fact]
+    public async Task ChangeTaskStatus_ReturnsNotFound_WhenTaskMissing()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var request = new ChangeTaskStatusDto { Status = TaskItemStatus.InProgress };
+
+        _serviceMock
+            .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
+            .ReturnsAsync((TaskItemDto?)null);
+
+        // Act
+        var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task ChangeTaskStatus_ReturnsConflict_WhenTransitionInvalid()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var request = new ChangeTaskStatusDto { Status = TaskItemStatus.Done };
+
+        _serviceMock
+            .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
+            .ThrowsAsync(
+                new InvalidTaskStatusTransitionException(TaskItemStatus.ToDo, TaskItemStatus.Done)
+            );
+
+        // Act
+        var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
+
+        // Assert
+        Assert.IsType<ConflictObjectResult>(result);
     }
 }

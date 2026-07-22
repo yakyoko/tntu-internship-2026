@@ -62,4 +62,22 @@ public class TasksController(ITaskService service) : ControllerBase
         var task = await service.UpdateTaskAsync(projectId, taskId, updateTaskDto);
         return task is null ? this.NotFound() : this.Ok(task);
     }
+
+    [HttpPatch("{taskId:guid}/status")]
+    public async Task<IActionResult> ChangeTaskStatus(
+        Guid projectId,
+        Guid taskId,
+        ChangeTaskStatusDto status
+    )
+    {
+        try
+        {
+            var task = await service.ChangeTaskStatusAsync(projectId, taskId, status);
+            return task is null ? this.NotFound() : this.Ok(task);
+        }
+        catch (InvalidTaskStatusTransitionException ex)
+        {
+            return this.Conflict(ex.Message);
+        }
+    }
 }
