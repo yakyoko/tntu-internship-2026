@@ -20,8 +20,8 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Restore dependencies
-      run: dotnet restore src/Projects.Api/Projects.Api.csproj
+      run: dotnet restore src/Projects.Api.Tests/Projects.Api.Tests.csproj
     - name: Build
-      run: dotnet build src/Projects.Api/Projects.Api.csproj --no-restore
+      run: dotnet build src/Projects.Api.Tests/Projects.Api.Tests.csproj --no-restore
     - name: Test
       run: dotnet test src/Projects.Api.Tests/Projects.Api.Tests.csproj --no-build --verbosity normal
