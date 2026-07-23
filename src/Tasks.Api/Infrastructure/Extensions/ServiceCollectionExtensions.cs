@@ -1,10 +1,20 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
+using Tasks.Api.Interfaces;
+using Tasks.Api.Repositories;
+using Tasks.Api.Services;
 
-namespace Projects.Api.Infrastructure;
+namespace Tasks.Api.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddTasksApplicationServices(this IServiceCollection services)
+    {
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ITaskService, TaskService>();
+        return services;
+    }
+
     public static IServiceCollection AddCosmosInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration
@@ -22,7 +32,7 @@ public static class ServiceCollectionExtensions
             configuration["CosmosDb:DatabaseName"]
             ?? throw new InvalidOperationException("CosmosDb:DatabaseName is missing.");
 
-        services.AddDbContext<ProjectsDbContext>(dbContextOptions =>
+        services.AddDbContext<TasksDbContext>(dbContextOptions =>
         {
             dbContextOptions.UseCosmos(
                 accountEndpoint,
