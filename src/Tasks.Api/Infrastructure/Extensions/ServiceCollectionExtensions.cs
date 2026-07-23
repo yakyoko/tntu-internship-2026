@@ -1,10 +1,20 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
+using Tasks.Api.Interfaces;
+using Tasks.Api.Repositories;
+using Tasks.Api.Services;
 
 namespace Tasks.Api.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddTasksApplicationServices(this IServiceCollection services)
+    {
+        services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ITaskService, TaskService>();
+        return services;
+    }
+
     public static IServiceCollection AddCosmosInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration

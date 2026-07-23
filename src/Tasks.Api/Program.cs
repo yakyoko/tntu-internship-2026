@@ -1,9 +1,5 @@
-using System.Text.Json.Serialization;
-using Tasks.Api.Clients;
 using Tasks.Api.Infrastructure;
-using Tasks.Api.Interfaces;
-using Tasks.Api.Repositories;
-using Tasks.Api.Services;
+using Tasks.Api.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,31 +8,20 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddCosmosInfrastructure(builder.Configuration);
 }
 
-builder.Services.AddHttpClient<IProjectApiClient, ProjectApiClient>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ProjectsApi:BaseUrl"]!);
-});
+builder.Services.AddTasksHealthChecks(builder.Configuration);
+builder.Services.AddProjectApiClient(builder.Configuration);
+builder.Services.AddTasksAutoMapper();
+builder.Services.AddTasksApplicationServices();
 
-builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddScoped<ITaskRepository, TaskRepository>();
-builder.Services.AddScoped<ITaskService, TaskService>();
-
-builder.Services.AddControllers();
-builder
-    .Services.AddControllers()
-    .AddJsonOptions(opt =>
-    {
-        opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
-
+builder.Services.AddTasksControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
+
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var context = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
-    await context.Database.EnsureCreatedAsync();
+    await app.InitializeTasksDatabaseAsync();
 }
 
 if (app.Environment.IsDevelopment())
@@ -45,10 +30,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapTasksHealthChecks();
+
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
