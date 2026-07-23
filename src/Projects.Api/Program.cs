@@ -1,7 +1,4 @@
-using Projects.Api.Infrastructure;
-using Projects.Api.Interfaces;
-using Projects.Api.Repositories;
-using Projects.Api.Services;
+using Projects.Api.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,19 +7,19 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddCosmosInfrastructure(builder.Configuration);
 }
 
-builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
-builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddProjectsHealthChecks();
+builder.Services.AddProjectsAutoMapper();
+builder.Services.AddProjectsApplicationServices();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
+
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    var context = scope.ServiceProvider.GetRequiredService<ProjectsDbContext>();
-    await context.Database.EnsureCreatedAsync();
+    await app.InitializeProjectsDatabaseAsync();
 }
 
 if (app.Environment.IsDevelopment())
@@ -31,10 +28,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapProjectsHealthChecks();
+
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
