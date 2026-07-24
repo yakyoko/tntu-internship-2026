@@ -7,9 +7,9 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddCosmosInfrastructure(builder.Configuration);
 }
 
-if (!builder.Environment.IsEnvironment("Testing"))
+if (builder.Environment.IsEnvironment("Production"))
 {
-    builder.Services.AddCosmosInfrastructure(builder.Configuration);
+    builder.Services.AddApplicationInsightsTelemetry();
 }
 
 builder.Services.AddProjectsHealthChecks();
