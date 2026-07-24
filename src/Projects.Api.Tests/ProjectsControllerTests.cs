@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Projects.Api.Controllers;
 using Projects.Api.Exceptions;
@@ -11,11 +12,16 @@ public class ProjectsControllerTests
 {
     private readonly Mock<IProjectService> _mockService;
     private readonly ProjectsController _controller;
+    private readonly Mock<ILogger<ProjectsController>> _mockLogger;
 
     public ProjectsControllerTests()
     {
         this._mockService = new Mock<IProjectService>();
-        this._controller = new ProjectsController(this._mockService.Object);
+        this._mockLogger = new Mock<ILogger<ProjectsController>>();
+        this._controller = new ProjectsController(
+            this._mockService.Object,
+            this._mockLogger.Object
+        );
     }
 
     [Fact]

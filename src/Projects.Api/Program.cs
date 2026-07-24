@@ -7,6 +7,11 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddCosmosInfrastructure(builder.Configuration);
 }
 
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddCosmosInfrastructure(builder.Configuration);
+}
+
 builder.Services.AddProjectsHealthChecks();
 builder.Services.AddProjectsAutoMapper();
 builder.Services.AddProjectsApplicationServices();

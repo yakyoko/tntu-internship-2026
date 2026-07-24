@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Projects.Api.Exceptions;
 using Projects.Api.Interfaces;
@@ -12,12 +13,18 @@ public class ProjectServiceTests
     private readonly Mock<IProjectRepository> _repoMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly ProjectService _service;
+    private readonly Mock<ILogger<ProjectService>> _mockLogger;
 
     public ProjectServiceTests()
     {
         this._repoMock = new Mock<IProjectRepository>();
         this._mapperMock = new Mock<IMapper>();
-        this._service = new ProjectService(this._repoMock.Object, this._mapperMock.Object);
+        this._mockLogger = new Mock<ILogger<ProjectService>>();
+        this._service = new ProjectService(
+            this._repoMock.Object,
+            this._mapperMock.Object,
+            this._mockLogger.Object
+        );
     }
 
     [Fact]
