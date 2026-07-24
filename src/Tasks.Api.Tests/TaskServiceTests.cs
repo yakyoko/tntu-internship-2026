@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Tasks.Api.Exceptions;
 using Tasks.Api.Interfaces;
@@ -12,14 +13,16 @@ public class TaskServiceTests
     private readonly Mock<ITaskRepository> _repositoryMock = new();
     private readonly Mock<IProjectApiClient> _projectApiClientMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
+    private readonly Mock<ILogger<TaskService>> _loggerMock = new();
     private readonly TaskService _service;
 
     public TaskServiceTests()
     {
-        _service = new TaskService(
-            _repositoryMock.Object,
-            _projectApiClientMock.Object,
-            _mapperMock.Object
+        this._service = new TaskService(
+            this._repositoryMock.Object,
+            this._projectApiClientMock.Object,
+            this._mapperMock.Object,
+            this._loggerMock.Object
         );
     }
 
@@ -45,15 +48,14 @@ public class TaskServiceTests
 
         TaskItem? createdTask = null;
 
-        _projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId)).ReturnsAsync(project);
+        this._projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId))
+            .ReturnsAsync(project);
 
-        _repositoryMock
-            .Setup(r => r.CreateTaskAsync(It.IsAny<TaskItem>()))
+        this._repositoryMock.Setup(r => r.CreateTaskAsync(It.IsAny<TaskItem>()))
             .Callback<TaskItem>(task => createdTask = task)
             .Returns(Task.CompletedTask);
 
-        _mapperMock
-            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+        this._mapperMock.Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
             .Returns<TaskItem>(task => new TaskItemDto
             {
                 Id = task.Id,
@@ -68,7 +70,7 @@ public class TaskServiceTests
             });
 
         // Act
-        var result = await _service.CreateTaskAsync(projectId, createDto);
+        var result = await this._service.CreateTaskAsync(projectId, createDto);
 
         // Assert
         Assert.NotNull(createdTask);
@@ -88,8 +90,8 @@ public class TaskServiceTests
         Assert.Equal(createDto.Title, result.Title);
         Assert.Equal(TaskItemStatus.ToDo, result.Status);
 
-        _projectApiClientMock.Verify(c => c.GetProjectByIdAsync(projectId), Times.Once);
-        _repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Once);
+        this._projectApiClientMock.Verify(c => c.GetProjectByIdAsync(projectId), Times.Once);
+        this._repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Once);
     }
 
     [Fact]
@@ -99,16 +101,15 @@ public class TaskServiceTests
         var projectId = Guid.NewGuid();
         var createDto = new CreateTaskDto { Title = "Task" };
 
-        _projectApiClientMock
-            .Setup(c => c.GetProjectByIdAsync(projectId))
+        this._projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId))
             .ReturnsAsync((ProjectDto?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
-            _service.CreateTaskAsync(projectId, createDto)
+            this._service.CreateTaskAsync(projectId, createDto)
         );
 
-        _repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Never);
+        this._repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Never);
     }
 
     [Fact]
@@ -125,14 +126,15 @@ public class TaskServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-        _projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId)).ReturnsAsync(project);
+        this._projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId))
+            .ReturnsAsync(project);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectArchivedException>(() =>
-            _service.CreateTaskAsync(projectId, createDto)
+            this._service.CreateTaskAsync(projectId, createDto)
         );
 
-        _repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Never);
+        this._repositoryMock.Verify(r => r.CreateTaskAsync(It.IsAny<TaskItem>()), Times.Never);
     }
 
     [Fact]
@@ -154,9 +156,8 @@ public class TaskServiceTests
             UpdatedAt = DateTimeOffset.UtcNow.AddMinutes(-5),
         };
 
-        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
-        _mapperMock
-            .Setup(m => m.Map<TaskItemDto>(task))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._mapperMock.Setup(m => m.Map<TaskItemDto>(task))
             .Returns(
                 new TaskItemDto
                 {
@@ -173,14 +174,14 @@ public class TaskServiceTests
             );
 
         // Act
-        var result = await _service.GetTaskByIdAsync(projectId, taskId);
+        var result = await this._service.GetTaskByIdAsync(projectId, taskId);
 
         // Assert
         Assert.Equal(taskId, result.Id);
         Assert.Equal(projectId, result.ProjectId);
         Assert.Equal("Task", result.Title);
 
-        _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
+        this._repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
     }
 
     [Fact]
@@ -190,16 +191,15 @@ public class TaskServiceTests
         var projectId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
 
-        _repositoryMock
-            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<TaskNotFoundException>(() =>
-            _service.GetTaskByIdAsync(projectId, taskId)
+            this._service.GetTaskByIdAsync(projectId, taskId)
         );
 
-        _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
+        this._repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
     }
 
     [Fact]
@@ -236,10 +236,11 @@ public class TaskServiceTests
             },
         };
 
-        _projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId)).ReturnsAsync(project);
-        _repositoryMock.Setup(r => r.GetAllTasksByProjectIdAsync(projectId)).ReturnsAsync(tasks);
-        _mapperMock
-            .Setup(m => m.Map<IEnumerable<TaskItemDto>>(tasks))
+        this._projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId))
+            .ReturnsAsync(project);
+        this._repositoryMock.Setup(r => r.GetAllTasksByProjectIdAsync(projectId))
+            .ReturnsAsync(tasks);
+        this._mapperMock.Setup(m => m.Map<IEnumerable<TaskItemDto>>(tasks))
             .Returns(
                 tasks.Select(t => new TaskItemDto
                 {
@@ -253,13 +254,13 @@ public class TaskServiceTests
             );
 
         // Act
-        var result = await _service.GetAllTasksByProjectIdAsync(projectId);
+        var result = await this._service.GetAllTasksByProjectIdAsync(projectId);
 
         // Assert
         var resultList = result.ToList();
         Assert.Equal(2, resultList.Count);
         Assert.All(resultList, dto => Assert.Equal(projectId, dto.ProjectId));
-        _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(projectId), Times.Once);
+        this._repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(projectId), Times.Once);
     }
 
     [Fact]
@@ -275,20 +276,21 @@ public class TaskServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-        _projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId)).ReturnsAsync(project);
-        _repositoryMock
-            .Setup(r => r.GetAllTasksByProjectIdAsync(projectId))
+        this._projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId))
+            .ReturnsAsync(project);
+        this._repositoryMock.Setup(r => r.GetAllTasksByProjectIdAsync(projectId))
             .ReturnsAsync(Enumerable.Empty<TaskItem>());
-        _mapperMock
-            .Setup(m => m.Map<IEnumerable<TaskItemDto>>(It.IsAny<IEnumerable<TaskItem>>()))
+        this._mapperMock.Setup(m =>
+                m.Map<IEnumerable<TaskItemDto>>(It.IsAny<IEnumerable<TaskItem>>())
+            )
             .Returns(Enumerable.Empty<TaskItemDto>());
 
         // Act
-        var result = await _service.GetAllTasksByProjectIdAsync(projectId);
+        var result = await this._service.GetAllTasksByProjectIdAsync(projectId);
 
         // Assert
         Assert.Empty(result);
-        _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(projectId), Times.Once);
+        this._repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(projectId), Times.Once);
     }
 
     [Fact]
@@ -297,16 +299,18 @@ public class TaskServiceTests
         // Arrange
         var projectId = Guid.NewGuid();
 
-        _projectApiClientMock
-            .Setup(c => c.GetProjectByIdAsync(projectId))
+        this._projectApiClientMock.Setup(c => c.GetProjectByIdAsync(projectId))
             .ReturnsAsync((ProjectDto?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
-            _service.GetAllTasksByProjectIdAsync(projectId)
+            this._service.GetAllTasksByProjectIdAsync(projectId)
         );
 
-        _repositoryMock.Verify(r => r.GetAllTasksByProjectIdAsync(It.IsAny<Guid>()), Times.Never);
+        this._repositoryMock.Verify(
+            r => r.GetAllTasksByProjectIdAsync(It.IsAny<Guid>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -336,10 +340,9 @@ public class TaskServiceTests
             DueDate = DateTimeOffset.UtcNow.AddDays(5),
         };
 
-        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
-        _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
-        _mapperMock
-            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        this._mapperMock.Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
             .Returns<TaskItem>(t => new TaskItemDto
             {
                 Id = t.Id,
@@ -354,7 +357,7 @@ public class TaskServiceTests
             });
 
         // Act
-        var result = await _service.UpdateTaskAsync(projectId, taskId, update);
+        var result = await this._service.UpdateTaskAsync(projectId, taskId, update);
 
         // Assert
         Assert.Equal(update.Title, result.Title);
@@ -374,8 +377,8 @@ public class TaskServiceTests
 
         Assert.True(task.UpdatedAt > originalCreatedAt);
 
-        _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
-        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+        this._repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
+        this._repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
     [Fact]
@@ -398,10 +401,9 @@ public class TaskServiceTests
         };
         var update = new UpdateTaskDto { Title = "New Title" };
 
-        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
-        _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
-        _mapperMock
-            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        this._mapperMock.Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
             .Returns<TaskItem>(t => new TaskItemDto
             {
                 Id = t.Id,
@@ -416,7 +418,7 @@ public class TaskServiceTests
             });
 
         // Act
-        var result = await _service.UpdateTaskAsync(projectId, taskId, update);
+        var result = await this._service.UpdateTaskAsync(projectId, taskId, update);
 
         // Assert
         Assert.Equal("New Title", result.Title);
@@ -433,16 +435,15 @@ public class TaskServiceTests
         var taskId = Guid.NewGuid();
         var update = new UpdateTaskDto { Title = "Title" };
 
-        _repositoryMock
-            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<TaskNotFoundException>(() =>
-            _service.UpdateTaskAsync(projectId, taskId, update)
+            this._service.UpdateTaskAsync(projectId, taskId, update)
         );
 
-        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+        this._repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
 
     [Theory]
@@ -468,10 +469,9 @@ public class TaskServiceTests
         };
         var request = new ChangeTaskStatusDto { Status = to };
 
-        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
-        _repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
-        _mapperMock
-            .Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._repositoryMock.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
+        this._mapperMock.Setup(m => m.Map<TaskItemDto>(It.IsAny<TaskItem>()))
             .Returns<TaskItem>(t => new TaskItemDto
             {
                 Id = t.Id,
@@ -483,14 +483,14 @@ public class TaskServiceTests
             });
 
         // Act
-        var result = await _service.ChangeTaskStatusAsync(projectId, taskId, request);
+        var result = await this._service.ChangeTaskStatusAsync(projectId, taskId, request);
 
         // Assert
         Assert.Equal(to, result.Status);
         Assert.Equal(to, task.Status);
         Assert.True(task.UpdatedAt > originalUpdatedAt);
 
-        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+        this._repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
     }
 
     [Theory]
@@ -520,14 +520,14 @@ public class TaskServiceTests
         };
         var request = new ChangeTaskStatusDto { Status = to };
 
-        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidTaskStatusTransitionException>(() =>
-            _service.ChangeTaskStatusAsync(projectId, taskId, request)
+            this._service.ChangeTaskStatusAsync(projectId, taskId, request)
         );
 
-        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+        this._repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
 
     [Fact]
@@ -538,16 +538,15 @@ public class TaskServiceTests
         var taskId = Guid.NewGuid();
         var request = new ChangeTaskStatusDto { Status = TaskItemStatus.InProgress };
 
-        _repositoryMock
-            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<TaskNotFoundException>(() =>
-            _service.ChangeTaskStatusAsync(projectId, taskId, request)
+            this._service.ChangeTaskStatusAsync(projectId, taskId, request)
         );
 
-        _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
+        this._repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Never);
     }
 
     [Fact]
@@ -566,15 +565,15 @@ public class TaskServiceTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        _repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
-        _repositoryMock.Setup(r => r.RemoveTaskAsync(task)).Returns(Task.CompletedTask);
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._repositoryMock.Setup(r => r.RemoveTaskAsync(task)).Returns(Task.CompletedTask);
 
         // Act
-        await _service.DeleteTaskAsync(projectId, taskId);
+        await this._service.DeleteTaskAsync(projectId, taskId);
 
         // Assert
-        _repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
-        _repositoryMock.Verify(r => r.RemoveTaskAsync(task), Times.Once);
+        this._repositoryMock.Verify(r => r.GetTaskByIdAsync(projectId, taskId), Times.Once);
+        this._repositoryMock.Verify(r => r.RemoveTaskAsync(task), Times.Once);
     }
 
     [Fact]
@@ -584,15 +583,14 @@ public class TaskServiceTests
         var projectId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
 
-        _repositoryMock
-            .Setup(r => r.GetTaskByIdAsync(projectId, taskId))
+        this._repositoryMock.Setup(r => r.GetTaskByIdAsync(projectId, taskId))
             .ReturnsAsync((TaskItem?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<TaskNotFoundException>(() =>
-            _service.DeleteTaskAsync(projectId, taskId)
+            this._service.DeleteTaskAsync(projectId, taskId)
         );
 
-        _repositoryMock.Verify(r => r.RemoveTaskAsync(It.IsAny<TaskItem>()), Times.Never);
+        this._repositoryMock.Verify(r => r.RemoveTaskAsync(It.IsAny<TaskItem>()), Times.Never);
     }
 }

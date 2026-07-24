@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Tasks.Api.Controllers;
 using Tasks.Api.Exceptions;
@@ -10,11 +11,12 @@ namespace Tasks.Api.Tests;
 public class TasksControllerTests
 {
     private readonly Mock<ITaskService> _serviceMock = new();
+    private readonly Mock<ILogger<TasksController>> _loggerMock = new();
     private readonly TasksController _controller;
 
     public TasksControllerTests()
     {
-        _controller = new TasksController(_serviceMock.Object);
+        this._controller = new TasksController(this._serviceMock.Object, this._loggerMock.Object);
     }
 
     [Fact]
@@ -34,10 +36,10 @@ public class TasksControllerTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        _serviceMock.Setup(s => s.CreateTaskAsync(projectId, createDto)).ReturnsAsync(created);
+        this._serviceMock.Setup(s => s.CreateTaskAsync(projectId, createDto)).ReturnsAsync(created);
 
         // Act
-        var result = await _controller.CreateTask(projectId, createDto);
+        var result = await this._controller.CreateTask(projectId, createDto);
 
         // Assert
         var createdResult = Assert.IsType<CreatedAtActionResult>(result);
@@ -57,12 +59,11 @@ public class TasksControllerTests
         var projectId = Guid.NewGuid();
         var createDto = new CreateTaskDto { Title = "Task" };
 
-        _serviceMock
-            .Setup(s => s.CreateTaskAsync(projectId, createDto))
+        this._serviceMock.Setup(s => s.CreateTaskAsync(projectId, createDto))
             .ThrowsAsync(new ProjectNotFoundException(projectId));
 
         // Act
-        var result = await _controller.CreateTask(projectId, createDto);
+        var result = await this._controller.CreateTask(projectId, createDto);
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -76,12 +77,11 @@ public class TasksControllerTests
         var projectId = Guid.NewGuid();
         var createDto = new CreateTaskDto { Title = "Task" };
 
-        _serviceMock
-            .Setup(s => s.CreateTaskAsync(projectId, createDto))
+        this._serviceMock.Setup(s => s.CreateTaskAsync(projectId, createDto))
             .ThrowsAsync(new ProjectArchivedException(projectId));
 
         // Act
-        var result = await _controller.CreateTask(projectId, createDto);
+        var result = await this._controller.CreateTask(projectId, createDto);
 
         // Assert
         var conflict = Assert.IsType<ConflictObjectResult>(result);
@@ -104,10 +104,10 @@ public class TasksControllerTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        _serviceMock.Setup(s => s.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
+        this._serviceMock.Setup(s => s.GetTaskByIdAsync(projectId, taskId)).ReturnsAsync(task);
 
         // Act
-        var result = await _controller.GetTaskById(projectId, taskId);
+        var result = await this._controller.GetTaskById(projectId, taskId);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -123,12 +123,11 @@ public class TasksControllerTests
         var projectId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
 
-        _serviceMock
-            .Setup(s => s.GetTaskByIdAsync(projectId, taskId))
+        this._serviceMock.Setup(s => s.GetTaskByIdAsync(projectId, taskId))
             .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
-        var result = await _controller.GetTaskById(projectId, taskId);
+        var result = await this._controller.GetTaskById(projectId, taskId);
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);
@@ -161,10 +160,10 @@ public class TasksControllerTests
             },
         };
 
-        _serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId)).ReturnsAsync(tasks);
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId)).ReturnsAsync(tasks);
 
         // Act
-        var result = await _controller.GetAllTasksByProjectId(projectId);
+        var result = await this._controller.GetAllTasksByProjectId(projectId);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -178,12 +177,11 @@ public class TasksControllerTests
         // Arrange
         var projectId = Guid.NewGuid();
 
-        _serviceMock
-            .Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
             .ReturnsAsync(Enumerable.Empty<TaskItemDto>());
 
         // Act
-        var result = await _controller.GetAllTasksByProjectId(projectId);
+        var result = await this._controller.GetAllTasksByProjectId(projectId);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -197,12 +195,11 @@ public class TasksControllerTests
         // Arrange
         var projectId = Guid.NewGuid();
 
-        _serviceMock
-            .Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
             .ThrowsAsync(new ProjectNotFoundException(projectId));
 
         // Act
-        var result = await _controller.GetAllTasksByProjectId(projectId);
+        var result = await this._controller.GetAllTasksByProjectId(projectId);
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -227,10 +224,11 @@ public class TasksControllerTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        _serviceMock.Setup(s => s.UpdateTaskAsync(projectId, taskId, update)).ReturnsAsync(updated);
+        this._serviceMock.Setup(s => s.UpdateTaskAsync(projectId, taskId, update))
+            .ReturnsAsync(updated);
 
         // Act
-        var result = await _controller.UpdateTask(projectId, taskId, update);
+        var result = await this._controller.UpdateTask(projectId, taskId, update);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -248,12 +246,11 @@ public class TasksControllerTests
         var taskId = Guid.NewGuid();
         var update = new UpdateTaskDto { Title = "Title" };
 
-        _serviceMock
-            .Setup(s => s.UpdateTaskAsync(projectId, taskId, update))
+        this._serviceMock.Setup(s => s.UpdateTaskAsync(projectId, taskId, update))
             .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
-        var result = await _controller.UpdateTask(projectId, taskId, update);
+        var result = await this._controller.UpdateTask(projectId, taskId, update);
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);
@@ -276,12 +273,11 @@ public class TasksControllerTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        _serviceMock
-            .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
+        this._serviceMock.Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
             .ReturnsAsync(updated);
 
         // Act
-        var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
+        var result = await this._controller.ChangeTaskStatus(projectId, taskId, request);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -297,12 +293,11 @@ public class TasksControllerTests
         var taskId = Guid.NewGuid();
         var request = new ChangeTaskStatusDto { Status = TaskItemStatus.InProgress };
 
-        _serviceMock
-            .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
+        this._serviceMock.Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
             .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
-        var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
+        var result = await this._controller.ChangeTaskStatus(projectId, taskId, request);
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);
@@ -316,14 +311,13 @@ public class TasksControllerTests
         var taskId = Guid.NewGuid();
         var request = new ChangeTaskStatusDto { Status = TaskItemStatus.Done };
 
-        _serviceMock
-            .Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
+        this._serviceMock.Setup(s => s.ChangeTaskStatusAsync(projectId, taskId, request))
             .ThrowsAsync(
                 new InvalidTaskStatusTransitionException(TaskItemStatus.ToDo, TaskItemStatus.Done)
             );
 
         // Act
-        var result = await _controller.ChangeTaskStatus(projectId, taskId, request);
+        var result = await this._controller.ChangeTaskStatus(projectId, taskId, request);
 
         // Assert
         Assert.IsType<ConflictObjectResult>(result);
@@ -336,14 +330,15 @@ public class TasksControllerTests
         var projectId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
 
-        _serviceMock.Setup(s => s.DeleteTaskAsync(projectId, taskId)).Returns(Task.CompletedTask);
+        this._serviceMock.Setup(s => s.DeleteTaskAsync(projectId, taskId))
+            .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _controller.DeleteTask(projectId, taskId);
+        var result = await this._controller.DeleteTask(projectId, taskId);
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        _serviceMock.Verify(s => s.DeleteTaskAsync(projectId, taskId), Times.Once);
+        this._serviceMock.Verify(s => s.DeleteTaskAsync(projectId, taskId), Times.Once);
     }
 
     [Fact]
@@ -353,12 +348,11 @@ public class TasksControllerTests
         var projectId = Guid.NewGuid();
         var taskId = Guid.NewGuid();
 
-        _serviceMock
-            .Setup(s => s.DeleteTaskAsync(projectId, taskId))
+        this._serviceMock.Setup(s => s.DeleteTaskAsync(projectId, taskId))
             .ThrowsAsync(new TaskNotFoundException(taskId));
 
         // Act
-        var result = await _controller.DeleteTask(projectId, taskId);
+        var result = await this._controller.DeleteTask(projectId, taskId);
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);
