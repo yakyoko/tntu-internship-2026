@@ -12,16 +12,12 @@ public class ProjectsControllerTests
 {
     private readonly Mock<IProjectService> _mockService;
     private readonly ProjectsController _controller;
-    private readonly Mock<ILogger<ProjectsController>> _mockLogger;
 
     public ProjectsControllerTests()
     {
         this._mockService = new Mock<IProjectService>();
-        this._mockLogger = new Mock<ILogger<ProjectsController>>();
-        this._controller = new ProjectsController(
-            this._mockService.Object,
-            this._mockLogger.Object
-        );
+        var mockLogger = new Mock<ILogger<ProjectsController>>();
+        this._controller = new ProjectsController(this._mockService.Object, mockLogger.Object);
     }
 
     [Fact]
@@ -151,33 +147,31 @@ public class ProjectsControllerTests
     }
 
     [Fact]
-    public async Task ArchiveProject_ReturnsNotFound_WhenServiceThrowsNotFound()
+    public async Task ArchiveProject_ThrowsProjectNotFoundException_WhenServiceThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
         this._mockService.Setup(s => s.ArchiveProjectAsync(id))
             .ThrowsAsync(new ProjectNotFoundException(id));
 
-        // Act
-        var result = await this._controller.ArchiveProject(id);
-
-        // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            this._controller.ArchiveProject(id)
+        );
     }
 
     [Fact]
-    public async Task ArchiveProject_ReturnsConflict_WhenServiceThrowsArchivedException()
+    public async Task ArchiveProject_ThrowsProjectArchivedException_WhenServiceThrowsArchivedException()
     {
         // Arrange
         var id = Guid.NewGuid();
         this._mockService.Setup(s => s.ArchiveProjectAsync(id))
             .ThrowsAsync(new ProjectArchivedException(id));
 
-        // Act
-        var result = await this._controller.ArchiveProject(id);
-
-        // Assert
-        Assert.IsType<ConflictObjectResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectArchivedException>(() =>
+            this._controller.ArchiveProject(id)
+        );
     }
 
     [Fact]
@@ -215,7 +209,7 @@ public class ProjectsControllerTests
     }
 
     [Fact]
-    public async Task UpdateProject_ReturnsNotFound_WhenServiceThrowsNotFound()
+    public async Task UpdateProject_ThrowsProjectNotFoundException_WhenServiceThrowsNotFound()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -223,15 +217,14 @@ public class ProjectsControllerTests
         this._mockService.Setup(s => s.UpdateProjectAsync(id, It.IsAny<UpdateProjectDto>()))
             .ThrowsAsync(new ProjectNotFoundException(id));
 
-        // Act
-        var result = await this._controller.UpdateProject(id, dto);
-
-        // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
+            this._controller.UpdateProject(id, dto)
+        );
     }
 
     [Fact]
-    public async Task UpdateProject_ReturnsConflict_WhenServiceThrowsArchivedException()
+    public async Task UpdateProject_ThrowsProjectArchivedException_WhenServiceThrowsArchivedException()
     {
         // Arrange
         var id = Guid.NewGuid();
@@ -239,10 +232,9 @@ public class ProjectsControllerTests
         this._mockService.Setup(s => s.UpdateProjectAsync(id, It.IsAny<UpdateProjectDto>()))
             .ThrowsAsync(new ProjectArchivedException(id));
 
-        // Act
-        var result = await this._controller.UpdateProject(id, dto);
-
-        // Assert
-        Assert.IsType<ConflictObjectResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<ProjectArchivedException>(() =>
+            this._controller.UpdateProject(id, dto)
+        );
     }
 }
