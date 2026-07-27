@@ -1,6 +1,10 @@
+using Projects.Api.Infrastructure;
 using Projects.Api.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ExceptionToProblemDetailsHandler>();
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
@@ -32,6 +36,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 app.MapProjectsHealthChecks();
 
