@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Projects.Api.Exceptions;
 using Projects.Api.Interfaces;
 using Projects.Api.Models;
 
@@ -16,11 +15,13 @@ public class ProjectsController(IProjectService service, ILogger<ProjectsControl
     public async Task<IActionResult> CreateProject(CreateProjectDto projectDto)
     {
         var project = await service.CreateProjectAsync(projectDto);
+
         logger.LogInformation(
             "Project {ProjectId} created with name {ProjectName}",
             project.Id,
             project.Name
         );
+
         return this.CreatedAtAction(nameof(this.GetProjectById), new { id = project.Id }, project);
     }
 
@@ -48,22 +49,10 @@ public class ProjectsController(IProjectService service, ILogger<ProjectsControl
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateProject(Guid id, UpdateProjectDto projectDto)
     {
-        try
-        {
-            var project = await service.UpdateProjectAsync(id, projectDto);
-            logger.LogInformation("Project {ProjectId} updated", id);
-            return this.Ok(project);
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            logger.LogWarning(ex, "Update failed, project {ProjectId} not found", id);
-            return this.NotFound(ex.Message);
-        }
-        catch (ProjectArchivedException ex)
-        {
-            logger.LogWarning(ex, "Update rejected, project {ProjectId} is archived", id);
-            return this.Conflict(ex.Message);
-        }
+        var project = await service.UpdateProjectAsync(id, projectDto);
+
+        logger.LogInformation("Project {ProjectId} updated", id);
+        return this.Ok(project);
     }
 
     [HttpPatch("{id:guid}/archive")]
@@ -72,21 +61,9 @@ public class ProjectsController(IProjectService service, ILogger<ProjectsControl
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ArchiveProject(Guid id)
     {
-        try
-        {
-            var project = await service.ArchiveProjectAsync(id);
-            logger.LogInformation("Project {ProjectId} archived", id);
-            return this.Ok(project);
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            logger.LogWarning(ex, "Archive failed, project {ProjectId} not found", id);
-            return this.NotFound(ex.Message);
-        }
-        catch (ProjectArchivedException ex)
-        {
-            logger.LogWarning(ex, "Archive rejected, project {ProjectId} already archived", id);
-            return this.Conflict(ex.Message);
-        }
+        var project = await service.ArchiveProjectAsync(id);
+
+        logger.LogInformation("Project {ProjectId} archived", id);
+        return this.Ok(project);
     }
 }
