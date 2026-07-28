@@ -27,11 +27,20 @@ public class TaskRepository : ITaskRepository
             ._tasksDbSet.WithPartitionKey(projectId.ToString())
             .FirstOrDefaultAsync(t => t.Id == taskId);
 
-    public async Task<IEnumerable<TaskItem>> GetAllTasksByProjectIdAsync(Guid projectId) =>
-        await this
-            ._tasksDbSet.WithPartitionKey(projectId.ToString())
-            .OrderByDescending(t => t.CreatedAt)
-            .ToListAsync();
+    public async Task<IEnumerable<TaskItem>> GetAllTasksByProjectIdAsync(
+        Guid projectId,
+        TaskItemStatus? status = null
+    )
+    {
+        var query = this._tasksDbSet.WithPartitionKey(projectId.ToString());
+
+        if (status.HasValue)
+        {
+            query = query.Where(t => t.Status == status.Value);
+        }
+
+        return await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
+    }
 
     public async Task SaveChangesAsync()
     {

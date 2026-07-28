@@ -145,7 +145,7 @@ public class TasksControllerTests
     }
 
     [Fact]
-    public async Task GetAllTasksByProjectId_ReturnsOk_WithPopulatedList()
+    public async Task GetTasksByProjectId_ReturnsOk_WithPopulatedList()
     {
         // Arrange
         var projectId = Guid.NewGuid();
@@ -170,11 +170,11 @@ public class TasksControllerTests
                 UpdatedAt = DateTimeOffset.UtcNow,
             },
         };
-
-        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId)).ReturnsAsync(tasks);
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId, null))
+            .ReturnsAsync(tasks);
 
         // Act
-        var result = await this._controller.GetAllTasksByProjectId(projectId);
+        var result = await this._controller.GetAllTasksByProjectId(projectId, null);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -183,16 +183,15 @@ public class TasksControllerTests
     }
 
     [Fact]
-    public async Task GetAllTasksByProjectId_ReturnsOk_WithEmptyList()
+    public async Task GetTasksByProjectId_ReturnsOk_WithEmptyList()
     {
         // Arrange
         var projectId = Guid.NewGuid();
-
-        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId, null))
             .ReturnsAsync(Enumerable.Empty<TaskItemDto>());
 
         // Act
-        var result = await this._controller.GetAllTasksByProjectId(projectId);
+        var result = await this._controller.GetAllTasksByProjectId(projectId, null);
 
         // Assert
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -201,33 +200,93 @@ public class TasksControllerTests
     }
 
     [Fact]
-    public async Task GetAllTasksByProjectId_ThrowsProjectNotFoundException_WhenProjectMissing()
+    public async Task GetTasksByProjectId_ThrowsProjectNotFoundException_WhenProjectMissing()
     {
         // Arrange
         var projectId = Guid.NewGuid();
-
-        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId, null))
             .ThrowsAsync(new ProjectNotFoundException(projectId));
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectNotFoundException>(() =>
-            this._controller.GetAllTasksByProjectId(projectId)
+            this._controller.GetAllTasksByProjectId(projectId, null)
         );
     }
 
     [Fact]
-    public async Task GetAllTasksByProjectId_ThrowsProjectApiUnavailableException_WhenProjectsApiDown()
+    public async Task GetTasksByProjectId_ThrowsProjectApiUnavailableException_WhenProjectsApiDown()
     {
         // Arrange
         var projectId = Guid.NewGuid();
-
-        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId))
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId, null))
             .ThrowsAsync(new ProjectApiUnavailableException(new Exception("timeout")));
 
         // Act & Assert
         await Assert.ThrowsAsync<ProjectApiUnavailableException>(() =>
-            this._controller.GetAllTasksByProjectId(projectId)
+            this._controller.GetAllTasksByProjectId(projectId, null)
         );
+    }
+
+    [Fact]
+    public async Task GetTasksByProjectId_ReturnsOk_WithOnlyMatchingStatus_WhenFilterApplied()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var inProgressTasks = new[]
+        {
+            new TaskItemDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "In progress task",
+                Status = TaskItemStatus.InProgress,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            },
+        };
+        this._serviceMock.Setup(s =>
+                s.GetAllTasksByProjectIdAsync(projectId, TaskItemStatus.InProgress)
+            )
+            .ReturnsAsync(inProgressTasks);
+
+        // Act
+        var result = await this._controller.GetAllTasksByProjectId(
+            projectId,
+            new TaskFilterDto() { Status = TaskItemStatus.InProgress }
+        );
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsAssignableFrom<IEnumerable<TaskItemDto>>(ok.Value);
+        var bodyList = body.ToList();
+        Assert.Single(bodyList);
+        Assert.All(bodyList, dto => Assert.Equal(TaskItemStatus.InProgress, dto.Status));
+
+        // Confirms the controller passes the query-bound status through untouched
+        this._serviceMock.Verify(
+            s => s.GetAllTasksByProjectIdAsync(projectId, TaskItemStatus.InProgress),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task GetTasksByProjectId_ReturnsOk_WithEmptyList_WhenNoTasksMatchStatusFilter()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        this._serviceMock.Setup(s => s.GetAllTasksByProjectIdAsync(projectId, TaskItemStatus.Done))
+            .ReturnsAsync(Enumerable.Empty<TaskItemDto>());
+
+        // Act
+        var result = await this._controller.GetAllTasksByProjectId(
+            projectId,
+            new TaskFilterDto() { Status = TaskItemStatus.Done }
+        );
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsAssignableFrom<IEnumerable<TaskItemDto>>(ok.Value);
+        Assert.Empty(body);
     }
 
     [Fact]

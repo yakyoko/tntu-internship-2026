@@ -64,7 +64,10 @@ public class TaskService(
         return mapper.Map<TaskItemDto>(task);
     }
 
-    public async Task<IEnumerable<TaskItemDto>> GetAllTasksByProjectIdAsync(Guid projectId)
+    public async Task<IEnumerable<TaskItemDto>> GetAllTasksByProjectIdAsync(
+        Guid projectId,
+        TaskItemStatus? taskFilterStatus = null
+    )
     {
         var project = await apiClient.GetProjectByIdAsync(projectId);
         if (project is null)
@@ -73,7 +76,7 @@ public class TaskService(
             throw new ProjectNotFoundException(projectId);
         }
 
-        var tasks = await repository.GetAllTasksByProjectIdAsync(projectId);
+        var tasks = await repository.GetAllTasksByProjectIdAsync(projectId, taskFilterStatus);
 
         return mapper.Map<IEnumerable<TaskItemDto>>(tasks);
     }
