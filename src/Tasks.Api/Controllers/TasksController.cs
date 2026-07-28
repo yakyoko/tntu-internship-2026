@@ -47,10 +47,10 @@ public class TasksController(ITaskService service, ILogger<TasksController> logg
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllTasksByProjectId(
         Guid projectId,
-        [FromQuery] TaskFilterDto taskFilter
+        [FromQuery] TaskFilterDto? taskFilter
     )
     {
-        var tasks = await service.GetAllTasksByProjectIdAsync(projectId, taskFilter.Status);
+        var tasks = await service.GetAllTasksByProjectIdAsync(projectId, taskFilter?.Status);
         return this.Ok(tasks);
     }
 

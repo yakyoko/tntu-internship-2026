@@ -66,7 +66,7 @@ public class TaskService(
 
     public async Task<IEnumerable<TaskItemDto>> GetAllTasksByProjectIdAsync(
         Guid projectId,
-        TaskItemStatus? taskFilterStatus
+        TaskItemStatus? taskFilterStatus = null
     )
     {
         var project = await apiClient.GetProjectByIdAsync(projectId);

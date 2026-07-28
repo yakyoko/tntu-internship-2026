@@ -8,7 +8,7 @@ public interface ITaskService
     Task<TaskItemDto> GetTaskByIdAsync(Guid projectId, Guid taskId);
     Task<IEnumerable<TaskItemDto>> GetAllTasksByProjectIdAsync(
         Guid projectId,
-        TaskItemStatus? taskFilterStatus
+        TaskItemStatus? taskFilterStatus = null
     );
     Task<TaskItemDto> UpdateTaskAsync(Guid projectId, Guid taskId, UpdateTaskDto updateTaskDto);
     Task<TaskItemDto> ChangeTaskStatusAsync(
