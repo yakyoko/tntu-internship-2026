@@ -44,9 +44,13 @@ public class TasksController(ITaskService service, ILogger<TasksController> logg
     [ProducesResponseType(typeof(IEnumerable<TaskItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
-    public async Task<IActionResult> GetAllTasksByProjectId(Guid projectId)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllTasksByProjectId(
+        Guid projectId,
+        [FromQuery] TaskFilterDto taskFilter
+    )
     {
-        var tasks = await service.GetAllTasksByProjectIdAsync(projectId);
+        var tasks = await service.GetAllTasksByProjectIdAsync(projectId, taskFilter.Status);
         return this.Ok(tasks);
     }
 
