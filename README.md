@@ -49,6 +49,53 @@ Start here based on your role:
 
 ---
 
+## Running with Docker
+
+The full stack (both APIs + a local Cosmos DB Emulator) can run entirely in Docker, with no local .NET installation or Cosmos Emulator setup required.
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- A `.env` file at the repo root
+
+### Start everything
+
+```bash
+docker compose up --build
+```
+
+This builds and starts three containers:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| `cosmos-db` | `https://localhost:8081` (data), `http://localhost:8080` (health) | Local Cosmos DB Emulator |
+| `projects-api` | `http://localhost:5001` | Projects.Api |
+| `tasks-api` | `http://localhost:5002` | Tasks.Api |
+
+First-time startup can take 1–2 minutes while the Cosmos DB Emulator image downloads and initializes. `projects-api` and `tasks-api` won't start until `cosmos-db` reports healthy.
+
+### Verify it's running
+
+```bash
+curl http://localhost:5001/health
+curl http://localhost:5002/health
+```
+
+Both should return `{"status":"Healthy", ...}`.
+
+### Stop everything
+
+```bash
+docker compose down
+```
+
+Add `-v` to also remove the Cosmos DB Emulator's persisted data volume:
+
+```bash
+docker compose down -v
+```
+
+---
 ## Tech stack
 
 | Layer | Technology |
